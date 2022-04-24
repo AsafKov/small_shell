@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
+#include <utility>
 #include <vector>
 #include <sstream>
 #include <sys/wait.h>
@@ -36,12 +37,27 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     int specialCharIndex;
     int specialCharType = isSpecialCommand(args, &specialCharIndex);
 
+    string fileName;
+    switch (specialCharType) {
+        case NOT_SPECIAL_COMMAND: {
+
+            break;
+        }
+        case SPECIAL_CHAR_REDIRECT: {
+            fileName = args[specialCharIndex+1];
+            break;
+        }
+        case SPECIAL_CHAR_REDIRECT_APPEND: {
+            break;
+        }
+    }
+
     Command *command = nullptr;
     if (firstArg == "chprompt") {
         command = new ChangePromptCommand(cmd_line, args);
     }
     if (firstArg == "showpid") {
-        command = new ShowPidCommand(cmd_line, args);
+        command = specialCharIndex == -1? new ShowPidCommand(cmd_line, args) : new ShowPidCommand(cmd_line, args, args[specialCharIndex+1]) ;
     }
     if (firstArg == "pwd") {
         command = new GetCurrDirCommand(cmd_line, args);
@@ -57,6 +73,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     if (firstArg == "fg") {
         command = new ForegroundCommand(cmd_line, args);
+    }
+    if (firstArg == "bg") {
+        command = new BackgroundCommand(cmd_line, args);
     }
     if (command == nullptr) {
         command = new ExternalCommand(cmd_line);
@@ -81,7 +100,7 @@ void ChangePromptCommand::execute() {
             smash.setPrompt(newPrompt);
         }
     } else {
-        cout << errorMessage;
+        cerr << errorMessage;
     }
 }
 
@@ -147,19 +166,38 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
 
 ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
     if (args[1] != nullptr) {
-        output = "smash error: showpid: too many arguments\n";
+        errorMessage = "smash error: showpid: too many arguments\n";
     } else {
         output = "pid is " + to_string(getpid()) + "\n";
     }
 }
 
+ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args, string fileName) : BuiltInCommand(cmd_line) {
+    output = "pid is " + to_string(getpid()) + "\n";
+    this->fileName = std::move(fileName);
+}
+
 void ShowPidCommand::execute() {
-    cout << output;
+    if(fileName.empty()){
+        if(errorMessage.empty()){
+            cout << output;
+        } else {
+            cerr << errorMessage;
+        }
+    } else {
+        int fd = open(fileName.c_str(), O_CREAT);
+        if(fd != -1){
+            write(fd, (void*)output.c_str(), strlen(output.c_str()));
+            close(fd);
+        } else {
+            perror("smash error: open failed");
+        }
+    }
 }
 
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
     if (args[1] != nullptr) {
-        output = "smash error: pwd: too many arguments\n";
+        errorMessage = "smash error: pwd: too many arguments\n";
     } else {
         char buffer[FILENAME_MAX];
         getcwd(buffer, FILENAME_MAX);
@@ -168,12 +206,16 @@ GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args) : BuiltI
 }
 
 void GetCurrDirCommand::execute() {
-    cout << output;
+    if(errorMessage.empty()){
+        cout << output;
+    } else {
+        cerr << errorMessage;
+    }
 }
 
 void ChangeDirCommand::execute() {
     if (!errorMessage.empty()) {
-        cout << errorMessage;
+        cerr << errorMessage;
     } else {
         SmallShell &smash = SmallShell::getInstance();
         char currDir[FILENAME_MAX];
@@ -181,7 +223,7 @@ void ChangeDirCommand::execute() {
         if (newDir == "-") {
             if (smash.getPrevDirectory().empty()) {
                 errorMessage = "smash error: cd: OLDPWD not set\n";
-                cout << errorMessage;
+                cerr << errorMessage;
             } else {
                 if (chdir(smash.getPrevDirectory().c_str()) == 0) {
                     smash.setPrevDirectory(currDir);
@@ -266,6 +308,20 @@ JobsList::JobEntry *JobsList::getLastJob(int *lastJobId) {
     return lastJob;
 }
 
+JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId)  {
+    int maxId = 0;
+    JobEntry *lastJob = nullptr;
+    for (JobEntry *entry: jobs) {
+        if ((entry->getId() > maxId)&&(entry->getStatus()==STATUS_STOPPED)) {
+            lastJob = entry;
+            maxId = entry->getId();
+        }
+    }
+    *jobId = maxId;
+    return lastJob;
+}
+
+
 void JobsList::removeJobById(int jobId) {
     for(int i=0; i<jobs.size(); i++){
         if(jobs.at(i)->getId() == jobId){
@@ -277,12 +333,12 @@ void JobsList::removeJobById(int jobId) {
 
 void KillCommand::execute() {
     if (!errorMessage.empty()) {
-        cout << errorMessage;
+        cerr << errorMessage;
     } else {
         SmallShell &smash = SmallShell::getInstance();
         int jobPid = smash.getJobPid(jobId);
         if (jobPid == -1) {
-            cout << "smash error: kill: job-id " << jobId << " does not exist\n";
+            cerr << "smash error: kill: job-id " << jobId << " does not exist\n";
         } else {
             if (kill(jobPid, sigNum) == -1) {
                 perror("smash error: kill failed");
@@ -328,21 +384,64 @@ ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltI
 
 void ForegroundCommand::execute() {
     if(!errorMessage.empty()){
-        cout << errorMessage;
+        cerr << errorMessage;
     } else {
         SmallShell &smash = SmallShell::getInstance();
         int id = JobsList::NOT_FOUND, status;
         ExternalCommand *cmd = smash.pushToForeground(jobId, &id);
         if(id <= 0){
             if(jobId == 0){
-                cout << "smash error: fg: jobs list is empty\n";
+                cerr << "smash error: fg: jobs list is empty\n";
             } else {
-                cout << "smash error: fg: job " << jobId << " does not exist\n";
+                cerr << "smash error: fg: job " << jobId << " does not exist\n";
             }
         } else {
+            cout << cmd->getCmdLine() << ": " << cmd->getPid() << "\n";
             kill(cmd->getPid(), SIGCONT);
             waitpid(cmd->getPid(), &status, WUNTRACED);
             smash.clearForegroundJob();
+        }
+    }
+}
+
+
+BackgroundCommand::BackgroundCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
+    if(args[2] != nullptr){
+        errorMessage = "smash error: bg:  invalid arguments\n";
+    } else {
+        if(args[1] != nullptr){
+            if(!isNumber(args[1])){
+                // TODO: is jobId < 0 invalid argument?
+                errorMessage = "smash error: fg: invalid arguments\n";
+            } else {
+                jobId = stoi(args[1]);
+                if(jobId < 1){
+                    errorMessage = "smash error: bg: job " + string(args[1]) + " does not exist\n";
+                }
+            }
+        } else {
+            jobId = LATEST_JOB;
+        }
+    }
+}
+
+void BackgroundCommand::execute() {
+    if(!errorMessage.empty()){
+        cout << errorMessage;
+    } else {
+        SmallShell &smash = SmallShell::getInstance();
+        int id = JobsList::NOT_FOUND, status;
+        ExternalCommand *cmd = smash.resumeStopped(jobId, &id);
+        if(id <= 0){
+            if(jobId == 0){
+                cout << "smash error: bg: jobs list is empty\n";
+            } else {
+                cout << "smash error: bg: job " << jobId << " does not exist\n";
+            }
+        }
+        else {
+            cout <<cmd->getCmdLine() <<"\n";
+            kill(cmd->getPid(), SIGCONT);
         }
     }
 }

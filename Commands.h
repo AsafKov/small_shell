@@ -74,6 +74,7 @@ public:
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
+    string errorMessage;
     string output;
 public:
     explicit GetCurrDirCommand(const char* cmd_line, char** args);
@@ -103,9 +104,12 @@ public:
 };
 
 class ShowPidCommand : public BuiltInCommand {
+    string errorMessage;
     string output;
+    string fileName;
 public:
     ShowPidCommand(const char* cmd_line, char** args);
+    ShowPidCommand(const char* cmd_line, char** args, string fileName);
     ~ShowPidCommand() override = default;
     void execute() override;
 };
@@ -176,6 +180,28 @@ public:
         }
         return jobEntry != nullptr? (ExternalCommand*)jobEntry->getCommand(): nullptr;
     }
+    ExternalCommand* resumeStopped(int jobId, int *id){
+        if(jobs.empty()){
+            *id = EMPTY_LIST;
+            return nullptr;
+        }
+        JobEntry *jobEntry;
+        if(jobId == 0){
+            jobEntry = getLastStoppedJob(id);
+        } else {
+            jobEntry = getJobById(jobId);
+        }
+
+        if(jobEntry != nullptr){
+            *id = jobEntry->getId();
+            if (jobEntry->getStatus()!=STATUS_STOPPED)
+            {
+                cout << "smash error: bg: job-id " << jobId << "  is already running in the background\n";
+            }
+            jobEntry->changeStatus(STATUS_ACTIVE);
+        }
+        return jobEntry != nullptr? (ExternalCommand*)jobEntry->getCommand(): nullptr;
+    }
     void removeFinishedJobs();
     JobEntry * getJobById(int jobId);
     int getJobPid(int jobId){
@@ -216,16 +242,11 @@ public:
 };
 
 class BackgroundCommand : public BuiltInCommand {
-private:
-    int pid;
-    int initTime;
-    int endTime;
+    static const int LATEST_JOB = 0;
+    int jobId;
+    string errorMessage;
 public:
-    int getPid(){ return pid; }
-    int getInitTime(){ return initTime; }
-    void setEndTime(int time){ this->endTime = time;}
-    int getEndTime(){ return endTime; }
-    BackgroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){};
+    BackgroundCommand(const char* cmd_line, char **args);
     virtual ~BackgroundCommand() {}
     void execute() override;
 };
@@ -264,6 +285,10 @@ public:
     void changeJobStatus(int jobId, int newStatus){
         jobList->getJobById(jobId)->changeStatus(newStatus);
     }
+    void removeJobById(int jobId)
+    {
+        jobList->removeJobById(jobId);
+    }
     void printJobs(){ jobList->printJobsList(); }
     int getForegroundCommandPid(){ return foregroundCommand != nullptr? foregroundCommand->getPid():-1; }
     void setForegroundCommand(ExternalCommand *command){ foregroundCommand = command; }
@@ -285,6 +310,13 @@ public:
         ExternalCommand *cmd = jobList->pushToForeground(jobId, id);
         if(cmd != nullptr){
             foregroundCommand = cmd;
+        }
+        return cmd;
+    }
+    ExternalCommand *resumeStopped(int jobId, int *id){
+        ExternalCommand *cmd = jobList->resumeStopped(jobId, id);
+        if(cmd != nullptr){
+            changeJobStatus(jobId, 0);
         }
         return cmd;
     }
