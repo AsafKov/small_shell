@@ -278,7 +278,7 @@ private:
     bool isRunning;
     SmallShell();
 public:
-    Command *CreateCommand(const char* cmd_line);
+    Command *CreateCommand(const char* cmd_line, int *commandType, string &specialArg);
     SmallShell(SmallShell const&)      = delete; // disable copy ctor
     string getPrompt(){ return prompt; }
     int getJobPid(int jobId){

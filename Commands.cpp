@@ -28,7 +28,7 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command *SmallShell::CreateCommand(const char *cmd_line) {
+Command *SmallShell::CreateCommand(const char *cmd_line, int *commandType, string& specialArg) {
     string cmd_s = _trim(string(cmd_line));
     string firstArg = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
@@ -36,7 +36,10 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
 
     _parseCommandLine(cmd_line, args);
     int specialCharIndex;
-    int specialCharType = isSpecialCommand(args, &specialCharIndex);
+    *commandType = isSpecialCommand(args, &specialCharIndex);
+    if(*commandType != NOT_SPECIAL_COMMAND){
+        specialArg = args[specialCharIndex + 1];
+    }
 
     Command *command = nullptr;
     if (firstArg == "chprompt") {
@@ -76,8 +79,29 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
 
 void SmallShell::executeCommand(const char *cmd_line) {
     this->jobList->removeFinishedJobs();
-    Command *command = CreateCommand(cmd_line);
-    command->execute();
+    string specialArg;
+    int commandType;
+    Command *command = CreateCommand(cmd_line, &commandType, specialArg);
+    if(commandType == NOT_SPECIAL_COMMAND){
+        command->execute();
+    } else {
+        switch (commandType) {
+            case SPECIAL_CHAR_REDIRECT: {
+                FILE* file = freopen(specialArg.c_str(), "w", stdout);
+                if(file == nullptr){
+                    perror("smash error: freopen failed");
+                } else {
+                    command->execute();
+                    fclose(stdout);
+                }
+                break;
+            }
+            case SPECIAL_CHAR_REDIRECT_APPEND: {
+
+                break;
+            }
+        }
+    }
 }
 
 void ChangePromptCommand::execute() {
