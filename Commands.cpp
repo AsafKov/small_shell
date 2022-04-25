@@ -364,9 +364,10 @@ void ForegroundCommand::execute() {
 }
 
 QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (string(args[1])== "kill")
-    {
-        isKill = true;
+    if (args[1]!=nullptr) {
+        if (string(args[1]) == "kill") {
+            isKill = true;
+        }
     }
     else
     {
@@ -375,12 +376,11 @@ QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 }
 
 void QuitCommand::execute() {
-    SmallShell &smash = SmallShell::getInstance();
+    SmallShell::getInstance().removeFinishedJobs();
     if (isKill== true) {
-        smash.killAll();
+        SmallShell::getInstance().killAll();
     }
     else {
-        smash.~SmallShell();
-        smash.setIsRunning();
+        SmallShell::getInstance().setIsRunning();
     }
 }

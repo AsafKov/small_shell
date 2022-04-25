@@ -291,6 +291,7 @@ public:
         jobList->killAll();
         setIsRunning();
     }
+
     void pushToBackground(){
         jobList->addJob(foregroundCommand, true);
         foregroundCommand = nullptr;
@@ -315,7 +316,7 @@ public:
     }
     void setIsRunning()
     {
-        isRunning= false;
+        this->isRunning= false;
     }
     bool getIsRunning()
     {
