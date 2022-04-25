@@ -109,7 +109,6 @@ class ShowPidCommand : public BuiltInCommand {
     string fileName;
 public:
     ShowPidCommand(const char* cmd_line, char** args);
-    ShowPidCommand(const char* cmd_line, char** args, string fileName);
     ~ShowPidCommand() override = default;
     void execute() override;
 };

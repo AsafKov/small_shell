@@ -37,27 +37,12 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     int specialCharIndex;
     int specialCharType = isSpecialCommand(args, &specialCharIndex);
 
-    string fileName;
-    switch (specialCharType) {
-        case NOT_SPECIAL_COMMAND: {
-
-            break;
-        }
-        case SPECIAL_CHAR_REDIRECT: {
-            fileName = args[specialCharIndex+1];
-            break;
-        }
-        case SPECIAL_CHAR_REDIRECT_APPEND: {
-            break;
-        }
-    }
-
     Command *command = nullptr;
     if (firstArg == "chprompt") {
         command = new ChangePromptCommand(cmd_line, args);
     }
     if (firstArg == "showpid") {
-        command = specialCharIndex == -1? new ShowPidCommand(cmd_line, args) : new ShowPidCommand(cmd_line, args, args[specialCharIndex+1]) ;
+        command = new ShowPidCommand(cmd_line, args);
     }
     if (firstArg == "pwd") {
         command = new GetCurrDirCommand(cmd_line, args);
@@ -166,9 +151,9 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
 
 ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
     if (args[1] != nullptr) {
-        errorMessage = "smash error: showpid: too many arguments\n";
+        output = "smash error: showpid: too many arguments";
     } else {
-        output = "pid is " + to_string(getpid()) + "\n";
+        output = to_string(getpid());
     }
 }
 
@@ -178,21 +163,7 @@ ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args, string fileNam
 }
 
 void ShowPidCommand::execute() {
-    if(fileName.empty()){
-        if(errorMessage.empty()){
-            cout << output;
-        } else {
-            cerr << errorMessage;
-        }
-    } else {
-        int fd = open(fileName.c_str(), O_CREAT);
-        if(fd != -1){
-            write(fd, (void*)output.c_str(), strlen(output.c_str()));
-            close(fd);
-        } else {
-            perror("smash error: open failed");
-        }
-    }
+    cout << output << "\n";
 }
 
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
