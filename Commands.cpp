@@ -18,6 +18,7 @@
 SmallShell::SmallShell() {
     prompt = "smash";
     jobList = new JobsList();
+    isRunning = true;
 }
 
 SmallShell::~SmallShell() {
@@ -58,6 +59,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     if (firstArg == "fg") {
         command = new ForegroundCommand(cmd_line, args);
+    }
+    if (firstArg == "quit") {
+        command = new QuitCommand(cmd_line, args);
     }
     if (firstArg == "bg") {
         command = new BackgroundCommand(cmd_line, args);
@@ -151,19 +155,14 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
 
 ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
     if (args[1] != nullptr) {
-        output = "smash error: showpid: too many arguments";
+        output = "smash error: showpid: too many arguments\n";
     } else {
-        output = to_string(getpid());
+        output = "pid is " + to_string(getpid()) + "\n";
     }
 }
 
-ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args, string fileName) : BuiltInCommand(cmd_line) {
-    output = "pid is " + to_string(getpid()) + "\n";
-    this->fileName = std::move(fileName);
-}
-
 void ShowPidCommand::execute() {
-    cout << output << "\n";
+    cout << output;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
@@ -239,6 +238,18 @@ void JobsList::removeFinishedJobs() {
         }
     }
     currentMaxId = currentMax;
+}
+
+void JobsList::killAll() {
+    removeFinishedJobs();
+    cout <<"sending SIGKILL signal to "<< jobs.size() <<" jobs:\n";
+    for (int i = 0; i < jobs.size(); i++) {
+        if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED)
+        {
+            cout <<""<< jobs.at(i)->getId() <<" "<< jobs.at(i)->getCommand()->getCmdLine() <<"\n";
+            kill(jobs.at(i)->getCommand()->getPid(), SIGKILL);
+        }
+    }
 }
 
 void JobsList::printJobsList() {
@@ -414,5 +425,26 @@ void BackgroundCommand::execute() {
             cout <<cmd->getCmdLine() <<"\n";
             kill(cmd->getPid(), SIGCONT);
         }
+    }
+}
+QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
+    if (string(args[1])== "kill")
+    {
+        isKill = true;
+    }
+    else
+    {
+        isKill=false;
+    }
+}
+
+void QuitCommand::execute() {
+    SmallShell &smash = SmallShell::getInstance();
+    if (isKill== true) {
+        smash.killAll();
+    }
+    else {
+        smash.~SmallShell();
+        smash.setIsRunning();
     }
 }

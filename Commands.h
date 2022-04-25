@@ -11,7 +11,7 @@ class Command {
     const string cmd_line;
 public:
     Command(const char* cmd_line): cmd_line(cmd_line){}
-    string getCmdLine() { return cmd_line; }
+    const string getCmdLine() const { return cmd_line; }
     virtual ~Command() = default;
     virtual void execute() = 0;
     //virtual void prepare();
@@ -114,12 +114,7 @@ public:
 };
 
 class JobsList;
-class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-    QuitCommand(const char* cmd_line, JobsList* jobs);
-    virtual ~QuitCommand() {}
-    void execute() override;
-};
+
 
 class JobsList {
 public:
@@ -154,7 +149,7 @@ public:
     ~JobsList() = default;
     void addJob(ExternalCommand* cmd, bool isStopped = false);
     void printJobsList();
-    void killAllJobs();
+    void killAll();
     void clearForegroundJob(){
         if(foregroundJob != nullptr){
             removeJobById(foregroundJob->getId());
@@ -250,6 +245,15 @@ public:
     void execute() override;
 };
 
+class QuitCommand : public BuiltInCommand {
+    string errorMessage;
+    bool isKill;
+public:
+    QuitCommand(const char *cmdLine, char **args);
+    virtual ~QuitCommand() {}
+    void execute() override;
+};
+
 class TailCommand : public BuiltInCommand {
 public:
     TailCommand(const char* cmd_line);
@@ -271,6 +275,7 @@ private:
     string prevDirectory;
     JobsList *jobList;
     ExternalCommand *foregroundCommand;
+    bool isRunning;
     SmallShell();
 public:
     Command *CreateCommand(const char* cmd_line);
@@ -298,6 +303,11 @@ public:
     void clearForegroundJob(){
         jobList->clearForegroundJob();
         clearForegroundCommand();
+    }
+    void killAll()
+    {
+        jobList->killAll();
+        setIsRunning();
     }
     void pushToBackground(){
         jobList->addJob(foregroundCommand, true);
@@ -327,6 +337,14 @@ public:
         static SmallShell instance; // Guaranteed to be destroyed.
         // Instantiated on first use.
         return instance;
+    }
+    void setIsRunning()
+    {
+        isRunning= false;
+    }
+    bool getIsRunning()
+    {
+        return this->isRunning;
     }
     ~SmallShell();
     void executeCommand(const char* cmd_line);
