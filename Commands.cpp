@@ -17,6 +17,7 @@
 SmallShell::SmallShell() {
     prompt = "smash";
     jobList = new JobsList();
+    isRunning = true;
 }
 
 SmallShell::~SmallShell() {
@@ -57,6 +58,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     if (firstArg == "fg") {
         command = new ForegroundCommand(cmd_line, args);
+    }
+    if (firstArg == "quit") {
+        command = new QuitCommand(cmd_line, args);
     }
     if (command == nullptr) {
         command = new ExternalCommand(cmd_line);
@@ -228,6 +232,18 @@ void JobsList::removeFinishedJobs() {
     currentMaxId = currentMax;
 }
 
+void JobsList::killAll() {
+    removeFinishedJobs();
+    cout <<"sending SIGKILL signal to "<< jobs.size() <<" jobs:\n";
+    for (int i = 0; i < jobs.size(); i++) {
+        if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED)
+        {
+            cout <<""<< jobs.at(i)->getId() <<" "<< jobs.at(i)->getCommand()->getCmdLine() <<"\n";
+            kill(jobs.at(i)->getCommand()->getPid(), SIGKILL);
+        }
+    }
+}
+
 void JobsList::printJobsList() {
     removeFinishedJobs();
     ExternalCommand *cmd = nullptr;
@@ -344,5 +360,27 @@ void ForegroundCommand::execute() {
             waitpid(cmd->getPid(), &status, WUNTRACED);
             smash.clearForegroundJob();
         }
+    }
+}
+
+QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
+    if (string(args[1])== "kill")
+    {
+        isKill = true;
+    }
+    else
+    {
+        isKill=false;
+    }
+}
+
+void QuitCommand::execute() {
+    SmallShell &smash = SmallShell::getInstance();
+    if (isKill== true) {
+        smash.killAll();
+    }
+    else {
+        smash.~SmallShell();
+        smash.setIsRunning();
     }
 }
