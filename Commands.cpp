@@ -579,16 +579,16 @@ BackgroundCommand::BackgroundCommand(const char *cmd_line, char **args) : BuiltI
 
 void BackgroundCommand::execute() {
     if (!errorMessage.empty()) {
-        cout << errorMessage;
+        cerr << errorMessage;
     } else {
         SmallShell &smash = SmallShell::getInstance();
         int id = JobsList::NOT_FOUND, status;
         ExternalCommand *cmd = smash.resumeStopped(jobId, &id);
         if (id <= 0) {
             if (jobId == 0) {
-                cout << "smash error: bg: jobs list is empty\n";
+                cerr << "smash error: bg: jobs list is empty\n";
             } else {
-                cout << "smash error: bg: job " << jobId << " does not exist\n";
+                cerr << "smash error: bg: job " << jobId << " does not exist\n";
             }
         } else {
             cout << cmd->getCmdLine() << "\n";
@@ -607,7 +607,7 @@ QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 
 void QuitCommand::execute() {
     SmallShell &smash = SmallShell::getInstance();
-    if (isKill == true) {
+    if (isKill) {
         smash.killAll();
     } else {
         smash.~SmallShell();
@@ -616,4 +616,29 @@ void QuitCommand::execute() {
 }
 
 TouchCommand::TouchCommand(const char* cmd_line, char** args, int position, int specialCharPosition) : BuiltInCommand(cmd_line) {
+    if(args[position + 3] != nullptr && position + 3 != specialCharPosition){
+        errorMessage = "smash error: touch: invalid arguments\n";
+    } else {
+        if(args[1] == nullptr || args[2] == nullptr){
+            errorMessage = "smash error: touch: invalid arguments\n";
+        } else {
+            fileName = args[1];
+            timeString = args[2];
+        }
+    }
+}
+
+void TouchCommand::execute() {
+    if(errorMessage.empty()){
+        struct std::tm time{};
+        strptime(timeString.c_str(), "%S:%M:%H:%d:%m:%Y", &time);
+        struct utimbuf timeBuffer{};
+        std::time_t timestamp = mktime(&time);
+        timeBuffer.modtime = timestamp;
+        if(utime(fileName.c_str(), &timeBuffer) == -1){
+            perror("smash error: touch failed");
+        }
+    } else {
+        cerr << errorMessage;
+    }
 }
