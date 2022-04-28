@@ -7,6 +7,10 @@
 #define COMMAND_MAX_ARGS (20)
 using namespace std;
 
+const int COMMAND_TYPE_BUILT_IN = 0;
+const int COMMAND_TYPE_EXTERNAL = 1;
+const int COMMAND_TYPE_BLOCKING = 2;
+
 class Command {
     const string cmd_line;
 public:
@@ -28,11 +32,14 @@ public:
 class ExternalCommand : public Command {
 private:
     int pid;
+    int commandType;
+    string arg;
 public:
     int getPid() const{ return pid; }
-    explicit ExternalCommand(const char* cmd_line) : Command(cmd_line){}
+    explicit ExternalCommand(const char* cmd_line, int type, string specialArg) : Command(cmd_line), commandType(type), arg(specialArg){}
     virtual ~ExternalCommand() {}
     void execute() override;
+    void executeRedirection();
 };
 
 class PipeCommand : public Command {
@@ -47,7 +54,7 @@ class RedirectionCommand : public Command {
     bool isValid;
     string errorMessage;
 public:
-    explicit RedirectionCommand(const char* cmd_line);
+    explicit RedirectionCommand(const char* cmd_line, int position);
     virtual ~RedirectionCommand() {}
     void execute() override;
     //void prepare() override;
@@ -58,11 +65,11 @@ class ChangeDirCommand : public BuiltInCommand {
     string newDir;
     string errorMessage;
 public:
-    ChangeDirCommand(const char *cmd_line, char** args): BuiltInCommand(cmd_line) {
-        if (args[1] == nullptr) {
+    ChangeDirCommand(const char *cmd_line, char** args, int position, int specialCharPosition): BuiltInCommand(cmd_line) {
+        if (args[position + 1] == nullptr) {
             errorMessage = "smash error: cd: invalid arguments\n";
         } else {
-            if(args[2] != nullptr){
+            if(args[position + 2] != nullptr && position+2 != specialCharPosition){
                 errorMessage = "smash error: cd: too many arguments\n";
             } else {
                 newDir = args[1];
@@ -77,7 +84,7 @@ class GetCurrDirCommand : public BuiltInCommand {
     string errorMessage;
     string output;
 public:
-    explicit GetCurrDirCommand(const char* cmd_line, char** args);
+    explicit GetCurrDirCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
     virtual ~GetCurrDirCommand() {}
     void execute() override;
 };
@@ -88,13 +95,13 @@ private:
     string errorMessage;
     bool isValid;
 public:
-    explicit ChangePromptCommand(const char* cmd_line, char** args): BuiltInCommand(cmd_line) {
+    explicit ChangePromptCommand(const char* cmd_line, char** args, int position, int specialCharPosition): BuiltInCommand(cmd_line) {
         isValid = true;
-        if (args[2] != nullptr) {
+        if (args[position + 2] != nullptr && position + 2 != specialCharPosition) {
             isValid = false;
             errorMessage = "smash error: chprompt: too many arguments\n";
         } else {
-            if (args[1] != nullptr) {
+            if (args[position + 1] != nullptr) {
                 newPrompt = args[1];
             }
         }
@@ -108,7 +115,7 @@ class ShowPidCommand : public BuiltInCommand {
     string output;
     string fileName;
 public:
-    ShowPidCommand(const char* cmd_line, char** args);
+    ShowPidCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
     ~ShowPidCommand() override = default;
     void execute() override;
 };
@@ -278,9 +285,11 @@ private:
     bool isRunning;
     SmallShell();
 public:
-    Command *CreateCommand(const char* cmd_line, int *commandType, string &specialArg);
+    Command *CreateCommand(const char* cmd_line, int *commandType, string &specialArg, int *isBuiltIn, string *commandAfterSplit);
+    Command *CreateCommand(const char* cmd_line);
     SmallShell(SmallShell const&)      = delete; // disable copy ctor
     string getPrompt(){ return prompt; }
+    void redirectStdout(Command *cmd, const string& specialArg, int redirectionType);
     int getJobPid(int jobId){
         return jobList->getJobPid(jobId);
     }

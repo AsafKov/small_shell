@@ -21,6 +21,8 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 const int NOT_SPECIAL_COMMAND = -1;
 const int SPECIAL_CHAR_REDIRECT = 0;
 const int SPECIAL_CHAR_REDIRECT_APPEND = 1;
+const int SPECIAL_PIPE_STDOUT = 2;
+const int SPECIAL_PIPE_STDERR = 3;
 
 string _ltrim(const std::string& s)
 {
@@ -59,9 +61,34 @@ int isSpecialCommand(char **args, int *pos){
             *pos = index;
             return SPECIAL_CHAR_REDIRECT_APPEND;
         }
+        if(args[index] == special_chars[2]){
+            *pos = index;
+            return SPECIAL_PIPE_STDOUT;
+        }
+        if(args[index] == special_chars[3]){
+            *pos = index;
+            return SPECIAL_PIPE_STDERR;
+        }
         index++;
     }
     return NOT_SPECIAL_COMMAND;
+}
+
+int specialCharStringPosition(const string& cmdline){
+    string special_chars[] = {">", ">>", "|", "&|"};
+    int index = cmdline.find_first_of(special_chars[0]);
+    if(index != -1){
+        return index;
+    }
+    index = cmdline.find_first_of(special_chars[1]);
+    if(index != -1){
+        return index;
+    }
+    index = cmdline.find_first_of(special_chars[2]);
+    if(index != -1){
+        return index;
+    }
+    return cmdline.find_first_of(special_chars[3]);
 }
 
 int _parseCommandLine(const char* cmd_line, char** args) {
