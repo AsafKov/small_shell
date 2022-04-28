@@ -241,8 +241,12 @@ public:
 };
 
 class TailCommand : public BuiltInCommand {
+    int numLines;
+    string errorMessage;
+    string fileName;
+
 public:
-    TailCommand(const char* cmd_line);
+    TailCommand(const char* cmd_line, char **args);
     virtual ~TailCommand() {}
     void execute() override;
 };
