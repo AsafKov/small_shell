@@ -62,7 +62,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     if (firstArg == "cd") {
         command = new ChangeDirCommand(cmd_line, args, 0, specialCharIndex);
     }
-
+    if(firstArg == "touch"){
+        command = new TouchCommand(cmd_line, args, 0, specialCharIndex);
+    }
     if (firstArg == "jobs") {
         command = new JobsCommand(cmd_line);
         *commandType = COMMAND_TYPE_BLOCKING;
@@ -611,4 +613,7 @@ void QuitCommand::execute() {
         smash.~SmallShell();
         smash.setIsRunning();
     }
+}
+
+TouchCommand::TouchCommand(const char* cmd_line, char** args, int position, int specialCharPosition) : BuiltInCommand(cmd_line) {
 }

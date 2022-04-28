@@ -269,8 +269,10 @@ public:
 };
 
 class TouchCommand : public BuiltInCommand {
+    string fileName;
+    string time;
 public:
-    TouchCommand(const char* cmd_line);
+    TouchCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
     virtual ~TouchCommand() {}
     void execute() override;
 };
