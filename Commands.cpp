@@ -111,23 +111,30 @@ void SmallShell::executeCommand(const char *cmd_line) {
             }
         } else {
             int pipeline[2];
-            pipe(pipeline);
-            int outChannelFd = specialChar == SPECIAL_PIPE_STDOUT ? 1 : 2;
-            int firstCmdType = commandType;
-            int srcPid = fork();
+            if(pipe(pipeline) == -1){
+                perror("smash error: pipe failed");
+            }
+            int outChannelFd = specialChar == SPECIAL_PIPE_STDOUT ? 1 : 2, firstCmdType = commandType, srcPid = fork();
+            if(srcPid == -1){
+                perror("smash error: fork failed");
+            }
             if (srcPid == 0) {
                 setpgrp();
                 dup2(pipeline[1], outChannelFd);
-                close(pipeline[0]);
-                close(pipeline[1]);
+                if(close(pipeline[0]) == -1){
+                    perror("smash error: close failed");
+                }
+                if(close(pipeline[1]) == -1){
+                    perror("smash error: close failed");
+                }
                 if(firstCmdType == COMMAND_TYPE_EXTERNAL){
-                    string cmd_line = command->getCmdLine();
+                    string src_command = command->getCmdLine();
                     bool isBackground = _isBackgroundCommand(command->getCmdLine().c_str());
-                    int position = cmd_line.find_last_of('&');
+                    int position = (int) src_command.find_last_of('&');
                     if (isBackground) {
-                        cmd_line = cmd_line.substr(0, position);
+                        src_command = src_command.substr(0, position);
                     }
-                    char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) cmd_line.c_str(), nullptr};
+                    char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) src_command.c_str(), nullptr};
                     if (execv(args[0], args) != -1) {
                         perror("smash error: execv failed");
                     }
@@ -150,16 +157,17 @@ void SmallShell::executeCommand(const char *cmd_line) {
                 if (targetPid == 0) {
                     setpgrp();
                     dup2(pipeline[0], 0);
-                    close(pipeline[0]);
-                    close(pipeline[1]);
+                    if(close(pipeline[0]) == -1){
+                        perror("smash error: close failed");
+                    }
                     if (commandType == COMMAND_TYPE_EXTERNAL) {
-                        string targetCommandCmdline = targetCommand->getCmdLine();
+                        string target_command = targetCommand->getCmdLine();
                         bool isBackground = _isBackgroundCommand(targetCommand->getCmdLine().c_str());
-                        int position = targetCommandCmdline.find_last_of('&');
+                        int position = (int) target_command.find_last_of('&');
                         if (isBackground) {
-                            targetCommandCmdline = targetCommandCmdline.substr(0, position);
+                            target_command = target_command.substr(0, position);
                         }
-                        char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) targetCommandCmdline.c_str(),
+                        char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) target_command.c_str(),
                                         nullptr};
                         if (execv(args[0], args) != -1) {
                             perror("smash error: execv failed");
