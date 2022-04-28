@@ -449,8 +449,9 @@ void TailCommand::execute() {
                 numLines=1;
             }
             int resultOpen2 = open(fileName.c_str(), O_RDONLY);
-            if(resultOpen2 == -1){
-                perror("smash error: open failed");}
+            if(resultOpen2 == -1) {
+                perror("smash error: open failed");
+            }
             int resultRead2=2;
             int resultOpen3 = open(fileName.c_str(), O_RDONLY);
             if(resultOpen3 == -1){
