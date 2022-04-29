@@ -262,8 +262,12 @@ public:
 };
 
 class TailCommand : public BuiltInCommand {
+    int numLines;
+    string errorMessage;
+    string fileName;
+
 public:
-    TailCommand(const char* cmd_line);
+    TailCommand(const char* cmd_line, char **args);
     virtual ~TailCommand() {}
     void execute() override;
 };
@@ -321,6 +325,7 @@ public:
         jobList->killAll();
         setIsRunning();
     }
+
     void pushToBackground(){
         jobList->addJob(foregroundCommand, true);
         foregroundCommand = nullptr;
@@ -352,7 +357,7 @@ public:
     }
     void setIsRunning()
     {
-        isRunning= false;
+        this->isRunning= false;
     }
     bool getIsRunning()
     {
