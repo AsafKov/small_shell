@@ -402,7 +402,7 @@ void JobsList::addJob(ExternalCommand *cmd, bool isStopped) {
 void JobsList::removeFinishedJobs() {
     int currentMax = 0;
     int status, result;
-    for (int i = 0; i < jobs.size(); i++) {
+    for (unsigned int i = 0; i < jobs.size(); i++) {
         result = waitpid(jobs.at(i)->getCommand()->getPid(), &status, WNOHANG);
         if (jobs.at(i)->getStatus() == STATUS_KILLED || ( result > 0 && (WIFEXITED(status) || WIFSIGNALED(status)))) {
             delete jobs.at(i)->getCommand();
@@ -417,7 +417,7 @@ void JobsList::removeFinishedJobs() {
 void JobsList::killAll() {
     removeFinishedJobs();
     cout << "sending SIGKILL signal to " << jobs.size() << " jobs:\n";
-    for (int i = 0; i < jobs.size(); i++) {
+    for (unsigned int i = 0; i < jobs.size(); i++) {
         if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED) {
             cout << "" << jobs.at(i)->getId() << " " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
             kill(jobs.at(i)->getCommand()->getPid(), SIGKILL);
@@ -478,7 +478,7 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 
 
 void JobsList::removeJobById(int jobId) {
-    for (int i = 0; i < jobs.size(); i++) {
+    for (unsigned int i = 0; i < jobs.size(); i++) {
         if (jobs.at(i)->getId() == jobId) {
             jobs.erase(jobs.begin() + i);
             break;
@@ -585,7 +585,7 @@ void BackgroundCommand::execute() {
         cerr << errorMessage;
     } else {
         SmallShell &smash = SmallShell::getInstance();
-        int id = JobsList::NOT_FOUND, status;
+        int id = JobsList::NOT_FOUND;
         ExternalCommand *cmd = smash.resumeStopped(jobId, &id);
         if (id <= 0) {
             if (jobId == 0) {
@@ -645,9 +645,7 @@ void TailCommand::execute() {
     if(!errorMessage.empty()){
         cout << errorMessage;
     } else {
-        SmallShell &smash = SmallShell::getInstance();
         char buffer[1];
-        char buffer2[1];
         //char* bufferOut[numLines];
         int resultOpen = open(fileName.c_str(), O_RDONLY);
         if(resultOpen == -1){
@@ -661,8 +659,8 @@ void TailCommand::execute() {
                 resultRead = read(resultOpen, buffer,1);
                 if(resultRead == -1){
                     perror("smash error: read failed");}
-                if (isEmpty=999 && buffer[0]=='\0'){
-                    exit;
+                if (isEmpty == 999 && buffer[0] == '\0'){
+                    exit(0);
                 }
                 isEmpty=0;
                 if (buffer[0]=='\n') {
@@ -690,7 +688,7 @@ void TailCommand::execute() {
             if(resultOpen3 == -1){
                 perror("smash error: open failed");}
             int resultRead3=2;
-            int j=0, i=0;
+
             int countLines=0, countChars=0, countRestChars=0, countTotalLines=0;
             if (counter==0)
             {
