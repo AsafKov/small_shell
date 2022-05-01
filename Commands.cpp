@@ -680,6 +680,7 @@ void TailCommand::execute() {
             if (counter==0){
                 numLines=1;
             }
+            
             int resultOpen2 = open(fileName.c_str(), O_RDONLY);
             if(resultOpen2 == -1) {
                 perror("smash error: open failed");
