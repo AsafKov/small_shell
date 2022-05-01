@@ -48,7 +48,7 @@ bool isNumber(const string& arg){
 }
 
 int isSpecialCommand(char **args, int *pos){
-    string special_chars[] = {"|", "|&", ">>", ""};
+    string special_chars[] = {">", ">>", "|", "&|"};
     int index = 0;
     while(args[index] != nullptr){
         if(args[index] == special_chars[0]){
