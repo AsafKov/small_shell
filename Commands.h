@@ -97,13 +97,8 @@ private:
 public:
     explicit ChangePromptCommand(const char* cmd_line, char** args, int position, int specialCharPosition): BuiltInCommand(cmd_line) {
         isValid = true;
-        if (args[position + 2] != nullptr && position + 2 != specialCharPosition) {
-            isValid = false;
-            errorMessage = "smash error: chprompt: too many arguments\n";
-        } else {
-            if (args[position + 1] != nullptr) {
-                newPrompt = args[1];
-            }
+        if (args[position + 1] != nullptr) {
+            newPrompt = args[1];
         }
     }
     ~ChangePromptCommand() override = default;
