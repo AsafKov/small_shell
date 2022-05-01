@@ -147,11 +147,11 @@ void SmallShell::executeCommand(const char *cmd_line) {
                     command->execute();
                     exit(0);
                 }
-            } else {
-                int status;
-                waitpid(srcPid, &status, WUNTRACED);
-                close(pipeline[1]);
             }
+
+            int status;
+            waitpid(srcPid, &status, WUNTRACED);
+            close(pipeline[1]);
 
             commandType = COMMAND_TYPE_BUILT_IN;
             Command *targetCommand = CreateCommand(targetCommandCmdline.c_str(), &specialChar, specialArg, &commandType,
@@ -183,10 +183,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
                         exit(0);
                     }
 
-                } else {
-                    int status;
-                    waitpid(targetPid, &status, WUNTRACED);
                 }
+                int statusTarget;
+                waitpid(targetPid, &statusTarget, WUNTRACED);
             }
         }
     }

@@ -50,7 +50,7 @@ bool isNumber(const string& arg){
 }
 
 int isSpecialCommand(char **args, int *pos){
-    string special_chars[] = {">", ">>", "|", "&|"};
+    string special_chars[] = {">", ">>", "|", "|&"};
     int index = 0;
     while(args[index] != nullptr){
         if(args[index] == special_chars[0]){
@@ -75,7 +75,7 @@ int isSpecialCommand(char **args, int *pos){
 }
 
 int specialCharStringPosition(const string& cmdline){
-    string special_chars[] = {">", ">>", "|", "&|"};
+    string special_chars[] = {">", ">>", "|", "|&"};
     int index = cmdline.find_first_of(special_chars[0]);
     if(index != -1){
         return index;
