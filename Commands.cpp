@@ -147,12 +147,13 @@ void SmallShell::executeCommand(const char *cmd_line) {
                     command->execute();
                     exit(0);
                 }
-            } else {
-                int status;
-                waitpid(srcPid, &status, WUNTRACED);
-                close(pipeline[1]);
             }
 
+            int status;
+            waitpid(srcPid, &status, WUNTRACED);
+            close(pipeline[1]);
+
+            commandType = COMMAND_TYPE_BUILT_IN;
             Command *targetCommand = CreateCommand(targetCommandCmdline.c_str(), &specialChar, specialArg, &commandType,
                                                    &targetCommandCmdline);
             int targetPid = fork();
@@ -182,10 +183,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
                         exit(0);
                     }
 
-                } else {
-                    int status;
-                    waitpid(targetPid, &status, WUNTRACED);
                 }
+                int statusTarget;
+                waitpid(targetPid, &statusTarget, WUNTRACED);
             }
         }
     }
@@ -372,14 +372,14 @@ void ChangeDirCommand::execute() {
                 if (chdir(smash.getPrevDirectory().c_str()) == 0) {
                     smash.setPrevDirectory(currDir);
                 } else {
-                    perror("smash error: cdhdir failed");
+                    perror("smash error: chdir failed");
                 }
             }
         } else {
             if (chdir(newDir.c_str()) == 0) {
                 smash.setPrevDirectory(currDir);
             } else {
-                perror("smash error: cdhdir failed");
+                perror("smash error: chdir failed");
             }
         }
     }

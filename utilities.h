@@ -50,7 +50,7 @@ bool isNumber(const string& arg){
 }
 
 int isSpecialCommand(char **args, int *pos){
-    string special_chars[] = {">", ">>", "|", "&|"};
+    string special_chars[] = {">", ">>", "|", "|&"};
     int index = 0;
     while(args[index] != nullptr){
         if(args[index] == special_chars[0]){
@@ -75,20 +75,21 @@ int isSpecialCommand(char **args, int *pos){
 }
 
 int specialCharStringPosition(const string& cmdline){
-    string special_chars[] = {">", ">>", "|", "&|"};
-    int index = cmdline.find_first_of(special_chars[0]);
+    string special_chars[] = {">", ">>", "|", "|&"};
+    int index = (int) cmdline.find(special_chars[0]);
     if(index != -1){
         return index;
     }
-    index = cmdline.find_first_of(special_chars[1]);
+    index = (int) cmdline.find(special_chars[1]);
     if(index != -1){
         return index;
     }
-    index = cmdline.find_first_of(special_chars[2]);
+    index = (int) cmdline.find(special_chars[2]);
     if(index != -1){
         return index;
     }
-    return cmdline.find_first_of(special_chars[3]);
+    index = (int) cmdline.find(special_chars[3]);
+    return index;
 }
 
 int _parseCommandLine(const char* cmd_line, char** args) {
