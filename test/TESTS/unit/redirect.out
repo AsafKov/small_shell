@@ -1,0 +1,156 @@
+smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> smash> test_redirect
+smash> smash> again_redirect
+smash> smash> again_redirect
+test_redirect
+smash> smash> smash pid is 17840
+smash> smash> smash pid is 17840
+smash pid is 17840
+smash> smash> smash pid is 17840
+smash> my_sleep
+mypid
+new
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> smash> smash> [1] sleep 100& : 17852 0 secs
+smash> smash error: kill: invalid arguments
+smash> smash> smash error: kill: invalid arguments
+smash> smash> k
+my_sleep
+mypid
+new
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash error: open: No such file or directory
+smash> smash error: open: No such file or directory
+smash> before
+smash> again_redirect
+test_redirect
+smash> smash> smash error: open: Permission denied
+smash> smash> k
+my_sleep
+mypid
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> smash> k
+my_sleep
+mypid
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+test
+smash> smash> 0
+2
+4
+Done: 6
+smash> smash: sending SIGKILL signal to 1 jobs:
+17852: sleep 100&
