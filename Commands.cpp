@@ -62,7 +62,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     if (firstArg == "cd") {
         command = new ChangeDirCommand(cmd_line, args, 0, specialCharIndex);
     }
-    if(firstArg == "touch"){
+    if (firstArg == "touch") {
         command = new TouchCommand(cmd_line, args, 0, specialCharIndex);
     }
     if (firstArg == "jobs") {
@@ -116,42 +116,37 @@ void SmallShell::executeCommand(const char *cmd_line) {
             }
         } else {
             int pipeline[2];
-            if(pipe(pipeline) == -1){
+            int outChannelFd =
+                    specialChar == SPECIAL_PIPE_STDOUT ? STDOUT_FILENO : STDERR_FILENO, firstCmdType = commandType;
+            if (pipe(pipeline) == -1) {
                 perror("smash error: pipe failed");
+                exit(0);
             }
-            int outChannelFd = specialChar == SPECIAL_PIPE_STDOUT ? 1 : 2, firstCmdType = commandType, srcPid = fork();
-            if(srcPid == -1){
+            int srcPid = fork();
+
+            if (srcPid == -1) {
                 perror("smash error: fork failed");
+                exit(0);
             }
+
             if (srcPid == 0) {
                 setpgrp();
                 dup2(pipeline[1], outChannelFd);
-                if(close(pipeline[0]) == -1){
-                    perror("smash error: close failed");
-                }
-                if(close(pipeline[1]) == -1){
-                    perror("smash error: close failed");
-                }
-                if(firstCmdType == COMMAND_TYPE_EXTERNAL){
-                    string src_command = command->getCmdLine();
-                    bool isBackground = _isBackgroundCommand(command->getCmdLine().c_str());
-                    int position = (int) src_command.find_last_of('&');
-                    if (isBackground) {
-                        src_command = src_command.substr(0, position);
+                if (firstCmdType == COMMAND_TYPE_EXTERNAL) {
+                    if (close(pipeline[0]) == -1) {
+                        perror("smash error: close failed");
+                        exit(0);
                     }
-                    char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) src_command.c_str(), nullptr};
-                    if (execv(args[0], args) != -1) {
-                        perror("smash error: execv failed");
+                    if (close(pipeline[1]) == -1) {
+                        perror("smash error: close failed");
+                        exit(0);
                     }
+                    execExternal(command->getCmdLine());
                 } else {
                     command->execute();
                     exit(0);
                 }
             }
-
-            int status;
-            waitpid(srcPid, &status, WUNTRACED);
-            close(pipeline[1]);
 
             commandType = COMMAND_TYPE_BUILT_IN;
             Command *targetCommand = CreateCommand(targetCommandCmdline.c_str(), &specialChar, specialArg, &commandType,
@@ -159,31 +154,39 @@ void SmallShell::executeCommand(const char *cmd_line) {
             int targetPid = fork();
             if (targetPid == -1) {
                 perror("smash error: fork failed");
+                exit(0);
             } else {
                 if (targetPid == 0) {
                     setpgrp();
-                    dup2(pipeline[0], 0);
-                    if(close(pipeline[0]) == -1){
-                        perror("smash error: close failed");
-                    }
+                    dup2(pipeline[0], STDIN_FILENO);
                     if (commandType == COMMAND_TYPE_EXTERNAL) {
-                        string target_command = targetCommand->getCmdLine();
-                        bool isBackground = _isBackgroundCommand(targetCommand->getCmdLine().c_str());
-                        int position = (int) target_command.find_last_of('&');
-                        if (isBackground) {
-                            target_command = target_command.substr(0, position);
+                        if (close(pipeline[0]) == -1) {
+                            perror("smash error: close failed");
+                            exit(0);
                         }
-                        char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) target_command.c_str(),
-                                        nullptr};
-                        if (execv(args[0], args) != -1) {
-                            perror("smash error: execv failed");
+                        if (close(pipeline[1]) == -1) {
+                            perror("smash error: close failed");
+                            exit(0);
                         }
+                        execExternal(targetCommand->getCmdLine());
                     } else {
                         targetCommand->execute();
                         exit(0);
                     }
-
                 }
+
+                if (close(pipeline[0]) == -1) {
+                    perror("smash error: close failed");
+                    exit(0);
+                }
+                if (close(pipeline[1]) == -1) {
+                    perror("smash error: close failed");
+                    exit(0);
+                }
+
+                int status;
+                waitpid(srcPid, &status, WUNTRACED);
+
                 int statusTarget;
                 waitpid(targetPid, &statusTarget, WUNTRACED);
             }
@@ -191,18 +194,33 @@ void SmallShell::executeCommand(const char *cmd_line) {
     }
 }
 
+void SmallShell::execExternal(string command) {
+    bool isBackground = _isBackgroundCommand(command.c_str());
+    int position = (int) command.find_last_of('&');
+    if (isBackground) {
+        command = command.substr(0, position);
+    }
+    char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) command.c_str(),
+                    nullptr};
+    if (execv(args[0], args) != -1) {
+        perror("smash error: execv failed");
+    }
+}
+
 void SmallShell::redirectStdout(Command *command, const string &specialArg, int redirectionType) {
     string mode = redirectionType == SPECIAL_CHAR_REDIRECT ? "w" : "a";
-    int stdout_dup_fd = dup(1);
+    int stdout_dup_fd = dup(STDOUT_FILENO);
     FILE *outputFile = fopen(specialArg.c_str(), mode.c_str());
     if (outputFile == nullptr) {
         perror("smash error: fopen failed");
     } else {
-        dup2(fileno(outputFile), 1);
+        dup2(fileno(outputFile), STDOUT_FILENO);
         command->execute();
-        fclose(outputFile);
-        dup2(stdout_dup_fd, 1);
+        dup2(stdout_dup_fd, STDOUT_FILENO);
         close(stdout_dup_fd);
+        if (fclose(outputFile) == -1) {
+            perror("smash error: fclose failed");
+        }
     }
 }
 
@@ -234,9 +252,9 @@ void ExternalCommand::execute() {
         perror("smash error: fork failed");
         return;
     } else {
-        setpgrp();
         bool isBackground = _isBackgroundCommand(this->getCmdLine().c_str());
         if (childPid == 0) {
+            setpgrp();
             string cmd_line = this->getCmdLine();
             int position = cmd_line.find_last_of('&');
             if (isBackground) {
@@ -267,9 +285,9 @@ void ExternalCommand::executeRedirection() {
         perror("smash error: fork failed");
         return;
     } else {
-        setpgrp();
         bool isBackground = _isBackgroundCommand(this->getCmdLine().c_str());
         if (childPid == 0) {
+            setpgrp();
             string cmd_line = this->getCmdLine();
             int position = cmd_line.find_last_of('&');
             if (isBackground) {
@@ -288,6 +306,7 @@ void ExternalCommand::executeRedirection() {
                 dup2(stdout_dup_fd, 1);
                 close(stdout_dup_fd);
             }
+            exit(0);
         } else {
             this->pid = childPid;
             int status;
@@ -386,7 +405,7 @@ void ChangeDirCommand::execute() {
 }
 
 void JobsList::addJob(ExternalCommand *cmd, bool isStopped) {
-    if(foregroundJob != nullptr && cmd->getPid() == foregroundJob->getCommand()->getPid()){
+    if (foregroundJob != nullptr && cmd->getPid() == foregroundJob->getCommand()->getPid()) {
         foregroundJob->changeStatus(isStopped);
         foregroundJob->setInitTIme(time(nullptr));
         foregroundJob = nullptr;
@@ -404,7 +423,7 @@ void JobsList::removeFinishedJobs() {
     int status, result;
     for (unsigned int i = 0; i < jobs.size(); i++) {
         result = waitpid(jobs.at(i)->getCommand()->getPid(), &status, WNOHANG);
-        if (jobs.at(i)->getStatus() == STATUS_KILLED || ( result > 0 && (WIFEXITED(status) || WIFSIGNALED(status)))) {
+        if (jobs.at(i)->getStatus() == STATUS_KILLED || (result > 0 && (WIFEXITED(status) || WIFSIGNALED(status)))) {
             delete jobs.at(i)->getCommand();
             jobs.erase(jobs.begin() + i);
         } else {
@@ -416,7 +435,7 @@ void JobsList::removeFinishedJobs() {
 
 void JobsList::killAll() {
     removeFinishedJobs();
-    cout << "sending SIGKILL signal to " << jobs.size() << " jobs:\n";
+    cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:\n";
     for (unsigned int i = 0; i < jobs.size(); i++) {
         if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED) {
             cout << "" << jobs.at(i)->getId() << " " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
@@ -429,7 +448,7 @@ void JobsList::printJobsList() {
     removeFinishedJobs();
     ExternalCommand *cmd = nullptr;
     for (JobEntry *entry: jobs) {
-        if(entry == foregroundJob) continue;
+        if (entry == foregroundJob) continue;
         cmd = (ExternalCommand *) entry->getCommand();
         cout << "[" << entry->getId() << "] " << cmd->getCmdLine() << ": " << cmd->getPid() << " "
              << difftime(time(nullptr), entry->getInitTime()) << " secs";
@@ -601,12 +620,12 @@ void BackgroundCommand::execute() {
 }
 
 QuitCommand::QuitCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[1]!=nullptr) {
+    if (args[1] != nullptr) {
         if (string(args[1]) == "kill") {
             isKill = true;
         }
     } else {
-        isKill=false;
+        isKill = false;
     }
 }
 
@@ -614,27 +633,23 @@ void QuitCommand::execute() {
     SmallShell::getInstance().removeFinishedJobs();
     if (isKill) {
         SmallShell::getInstance().killAll();
-    }
-    else {
+    } else {
         SmallShell::getInstance().setIsRunning();
     }
 }
 
 TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[1]== nullptr){
+    if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
-    }
-    else{
-        if (isNumber(args[1])){
+    } else {
+        if (isNumber(args[1])) {
             numLines = stoi(args[1]);
-            if (args[2]== nullptr){
+            if (args[2] == nullptr) {
                 errorMessage = "smash error: tail: invalid arguments\n";
-            }
-            else {
+            } else {
                 fileName = args[2];
             }
-        }
-        else{
+        } else {
             fileName = args[1];
             numLines = 10;
         }
@@ -642,71 +657,70 @@ TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 }
 
 void TailCommand::execute() {
-    if(!errorMessage.empty()){
+    if (!errorMessage.empty()) {
         cout << errorMessage;
     } else {
         char buffer[1];
         //char* bufferOut[numLines];
         int resultOpen = open(fileName.c_str(), O_RDONLY);
-        if(resultOpen == -1){
+        if (resultOpen == -1) {
             perror("smash error: open failed");
         } else {
-            int counter=1;
-            int resultRead=2;
-            int isEmpty=999;
-            while ( resultRead != 0)
-            {
-                resultRead = read(resultOpen, buffer,1);
-                if(resultRead == -1){
-                    perror("smash error: read failed");}
-                if (isEmpty == 999 && buffer[0] == '\0'){
+            int counter = 1;
+            int resultRead = 2;
+            int isEmpty = 999;
+            while (resultRead != 0) {
+                resultRead = read(resultOpen, buffer, 1);
+                if (resultRead == -1) {
+                    perror("smash error: read failed");
+                }
+                if (isEmpty == 999 && buffer[0] == '\0') {
                     exit(0);
                 }
-                isEmpty=0;
-                if (buffer[0]=='\n') {
+                isEmpty = 0;
+                if (buffer[0] == '\n') {
                     counter++;
                 }
             }
-            if (buffer[0]=='\n')
-            {
-                counter-=2;
+            if (buffer[0] == '\n') {
+                counter -= 2;
             }
 
-            if (counter<numLines && counter>0){
-                numLines=counter;
+            if (counter < numLines && counter > 0) {
+                numLines = counter;
             }
-            if (counter==0){
-                numLines=1;
+            if (counter == 0) {
+                numLines = 1;
             }
 
             int resultOpen2 = open(fileName.c_str(), O_RDONLY);
-            if(resultOpen2 == -1) {
+            if (resultOpen2 == -1) {
                 perror("smash error: open failed");
             }
-            int resultRead2=2;
+            int resultRead2 = 2;
             int resultOpen3 = open(fileName.c_str(), O_RDONLY);
-            if(resultOpen3 == -1){
-                perror("smash error: open failed");}
-            int resultRead3=2;
+            if (resultOpen3 == -1) {
+                perror("smash error: open failed");
+            }
+            int resultRead3 = 2;
 
-            int countLines=0, countChars=0, countRestChars=0, countTotalLines=0;
-            if (counter==0)
-            {
+            int countLines = 0, countChars = 0, countRestChars = 0, countTotalLines = 0;
+            if (counter == 0) {
 
-                while (resultRead2!=0)
-                {
-                    resultRead2 = read(resultOpen2, buffer,1);
-                    if(resultRead2 == -1){
-                        perror("smash error: read failed");}
+                while (resultRead2 != 0) {
+                    resultRead2 = read(resultOpen2, buffer, 1);
+                    if (resultRead2 == -1) {
+                        perror("smash error: read failed");
+                    }
                     countChars++;
                 }
                 countChars--;
-            }
-            else {
+            } else {
                 while ((countLines < numLines) && (countTotalLines <= counter)) {
                     resultRead2 = read(resultOpen2, buffer, 1);
-                    if(resultRead2 == -1){
-                        perror("smash error: read failed");}
+                    if (resultRead2 == -1) {
+                        perror("smash error: read failed");
+                    }
                     if ((buffer[0] == '\n') || (resultRead2 == 0)) {
                         if (countTotalLines >= counter - numLines) {
                             countLines++;
@@ -729,52 +743,59 @@ void TailCommand::execute() {
 
                 }
             }
-            char* bufferOut[countChars];
-            if (buffer[0]!='\n')
-            {
-                if (countRestChars>0){
-                    char* bufferGarbage[countRestChars];
-                    resultRead3 = read(resultOpen3, bufferGarbage,countRestChars);
-                    if(resultRead3 == -1){
-                        perror("smash error: read failed");}
+            char *bufferOut[countChars];
+            if (buffer[0] != '\n') {
+                if (countRestChars > 0) {
+                    char *bufferGarbage[countRestChars];
+                    resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
+                    if (resultRead3 == -1) {
+                        perror("smash error: read failed");
+                    }
                 }
                 countChars--;
-                resultRead3 = read(resultOpen3, bufferOut,countChars);
-                if(resultRead3 == -1){
-                    perror("smash error: read failed");}
-                int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                if(writeRes == -1){
-                    perror("smash error: write failed");}
-                char space[1];
-                space[0]='\n';
-                int writeSpace=write(STDOUT_FILENO, space, 1);
-                if(writeSpace== -1){
-                    perror("smash error: write failed");}
-            }
-            else{
-                if (countRestChars>0){
-                    char* bufferGarbage[countRestChars];
-                    resultRead3 = read(resultOpen3, bufferGarbage,countRestChars);
-                    if(resultRead3 == -1){
-                        perror("smash error: read failed");}
+                resultRead3 = read(resultOpen3, bufferOut, countChars);
+                if (resultRead3 == -1) {
+                    perror("smash error: read failed");
                 }
-                resultRead3 = read(resultOpen3, bufferOut,countChars);
-                if(resultRead3 == -1){
-                    perror("smash error: read failed");}
                 int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                if(writeRes == -1){
-                    perror("smash error: write failed");}
+                if (writeRes == -1) {
+                    perror("smash error: write failed");
+                }
+                char space[1];
+                space[0] = '\n';
+                int writeSpace = write(STDOUT_FILENO, space, 1);
+                if (writeSpace == -1) {
+                    perror("smash error: write failed");
+                }
+            } else {
+                if (countRestChars > 0) {
+                    char *bufferGarbage[countRestChars];
+                    resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
+                    if (resultRead3 == -1) {
+                        perror("smash error: read failed");
+                    }
+                }
+                resultRead3 = read(resultOpen3, bufferOut, countChars);
+                if (resultRead3 == -1) {
+                    perror("smash error: read failed");
+                }
+                int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
+                if (writeRes == -1) {
+                    perror("smash error: write failed");
+                }
             }
 
         }
 
     }
 }
-TouchCommand::TouchCommand(const char* cmd_line, char** args, int position, int specialCharPosition) : BuiltInCommand(cmd_line) {
-    if(args[position + 3] != nullptr && position + 3 != specialCharPosition){
+
+TouchCommand::TouchCommand(const char *cmd_line, char **args, int position, int specialCharPosition) : BuiltInCommand(
+        cmd_line) {
+    if (args[position + 3] != nullptr && position + 3 != specialCharPosition) {
         errorMessage = "smash error: touch: invalid arguments\n";
     } else {
-        if(args[1] == nullptr || args[2] == nullptr){
+        if (args[1] == nullptr || args[2] == nullptr) {
             errorMessage = "smash error: touch: invalid arguments\n";
         } else {
             fileName = args[1];
@@ -784,13 +805,13 @@ TouchCommand::TouchCommand(const char* cmd_line, char** args, int position, int 
 }
 
 void TouchCommand::execute() {
-    if(errorMessage.empty()){
+    if (errorMessage.empty()) {
         struct std::tm time{};
         strptime(timeString.c_str(), "%S:%M:%H:%d:%m:%Y", &time);
         struct utimbuf timeBuffer{};
         std::time_t timestamp = mktime(&time);
         timeBuffer.modtime = timestamp;
-        if(utime(fileName.c_str(), &timeBuffer) == -1){
+        if (utime(fileName.c_str(), &timeBuffer) == -1) {
             perror("smash error: touch failed");
         }
     } else {

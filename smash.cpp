@@ -15,9 +15,11 @@ int main(int argc, char* argv[]) {
 
     //TODO: setup sig alarm handler
 
+    std::cout.setf(std::ios::unitbuf);
     SmallShell& smash = SmallShell::getInstance();
     while(smash.getIsRunning()) {
         std::cout << smash.getPrompt() << "> ";
+        std::cout.flush();
         std::string cmd_line;
         std::getline(std::cin, cmd_line);
         smash.executeCommand(cmd_line.c_str());

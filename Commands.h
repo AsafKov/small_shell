@@ -286,9 +286,9 @@ private:
     ExternalCommand *foregroundCommand;
     bool isRunning;
     SmallShell();
+    void execExternal(string command);
 public:
     Command *CreateCommand(const char* cmd_line, int *commandType, string &specialArg, int *isBuiltIn, string *commandAfterSplit);
-    Command *CreateCommand(const char* cmd_line);
     SmallShell(SmallShell const&)      = delete; // disable copy ctor
     string getPrompt(){ return prompt; }
     void redirectStdout(Command *cmd, const string& specialArg, int redirectionType);

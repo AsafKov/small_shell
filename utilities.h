@@ -42,8 +42,15 @@ string _trim(const std::string& s)
 }
 
 bool isNumber(const string& arg){
+    if(arg.empty()){
+        return false;
+    }
     bool isNumber = true;
-    for(char c: arg){
+    string temp = arg;
+    if(arg.at(0) == '-'){
+        temp = temp.substr(1);
+    }
+    for(char c : temp){
         isNumber &= isdigit(c);
     }
     return isNumber;
