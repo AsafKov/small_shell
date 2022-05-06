@@ -28,42 +28,40 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, string &specialArg, int *commandType,
-                                   string *targetCommandCmdline) {
-    string cmd_s = _trim(string(cmd_line));
+Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, string &specialArg, int *commandType) {
+    string string_cmdline = cmd_line;
+    unsigned int splitAt = findSpecialChar(string_cmdline, specialType);
+    string left_side = string_cmdline.substr(0, splitAt);
+    string right_side;
+    if(*specialType != NOT_SPECIAL_COMMAND){
+        int length = *specialType == SPECIAL_CHAR_REDIRECT || *specialType == SPECIAL_PIPE_STDOUT ? 1 : 2;
+        right_side = string_cmdline.substr(splitAt + length, string_cmdline.length()-1);
+        right_side = _trim(right_side);
+    }
+
+    specialArg = right_side;
+    string cmd_s = _trim(left_side);
     string firstArg = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
     char **args = new char *[COMMAND_MAX_ARGS];
 
-    _parseCommandLine(cmd_line, args);
-    int splitAt = specialCharStringPosition(string(cmd_line));
-    int specialCharIndex;
-    *specialType = isSpecialCommand(args, &specialCharIndex);
-    if (*specialType != NOT_SPECIAL_COMMAND) {
-        specialArg = args[specialCharIndex + 1];
-    }
-    string cmdline_beforeChar = cmd_line;
-    if (splitAt != -1) {
-        int length = *specialType == SPECIAL_CHAR_REDIRECT || *specialType == SPECIAL_PIPE_STDOUT ? 1 : 2;
-        *targetCommandCmdline = cmdline_beforeChar.substr(splitAt + length, string::npos);
-        cmdline_beforeChar = cmdline_beforeChar.substr(0, splitAt - 1);
-    }
+    _parseCommandLine(left_side.c_str(), args);
 
     Command *command = nullptr;
     if (firstArg == "chprompt") {
-        command = new ChangePromptCommand(cmd_line, args, 0, specialCharIndex);
+        command = new ChangePromptCommand(cmd_line, args);
     }
     if (firstArg == "showpid") {
-        command = new ShowPidCommand(cmd_line, args, 0, specialCharIndex);
+        command = new ShowPidCommand(cmd_line, args);
     }
     if (firstArg == "pwd") {
-        command = new GetCurrDirCommand(cmd_line, args, 0, specialCharIndex);
+        command = new GetCurrDirCommand(cmd_line, args);
     }
     if (firstArg == "cd") {
-        command = new ChangeDirCommand(cmd_line, args, 0, specialCharIndex);
+        command = new ChangeDirCommand(cmd_line, args);
     }
     if (firstArg == "touch") {
-        command = new TouchCommand(cmd_line, args, 0, specialCharIndex);
+        command = new TouchCommand(cmd_line, args);
     }
     if (firstArg == "jobs") {
         command = new JobsCommand(cmd_line);
@@ -89,7 +87,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
         command = new TailCommand(cmd_line, args);
     }
     if (command == nullptr) {
-        command = new ExternalCommand(cmdline_beforeChar.c_str(), *specialType, specialArg);
+        command = new ExternalCommand(cmd_line, left_side, right_side, *specialType);
         *commandType = COMMAND_TYPE_EXTERNAL;
     }
 
@@ -99,16 +97,15 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
 
 void SmallShell::executeCommand(const char *cmd_line) {
     this->jobList->removeFinishedJobs();
-    string specialArg, targetCommandCmdline;
+    string specialArg;
     int specialChar, commandType = COMMAND_TYPE_BUILT_IN;
-    Command *command = CreateCommand(cmd_line, &specialChar, specialArg, &commandType, &targetCommandCmdline);
+    Command *command = CreateCommand(cmd_line, &specialChar, specialArg, &commandType);
     if (specialChar == NOT_SPECIAL_COMMAND) {
         command->execute();
     } else {
         if (specialChar == SPECIAL_CHAR_REDIRECT || specialChar == SPECIAL_CHAR_REDIRECT_APPEND) {
             if (commandType == COMMAND_TYPE_BUILT_IN) {
                 redirectStdout(command, specialArg, specialChar);
-
             } else {
                 if (commandType == COMMAND_TYPE_EXTERNAL) {
                     command->execute();
@@ -141,7 +138,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
                         perror("smash error: close failed");
                         exit(0);
                     }
-                    execExternal(command->getCmdLine());
+                    execExternal(command->getExecutableCommand());
                 } else {
                     command->execute();
                     exit(0);
@@ -149,8 +146,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
             }
 
             commandType = COMMAND_TYPE_BUILT_IN;
-            Command *targetCommand = CreateCommand(targetCommandCmdline.c_str(), &specialChar, specialArg, &commandType,
-                                                   &targetCommandCmdline);
+            Command *targetCommand = CreateCommand(specialArg.c_str(), &specialChar, specialArg, &commandType);
             int targetPid = fork();
             if (targetPid == -1) {
                 perror("smash error: fork failed");
@@ -168,7 +164,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
                             perror("smash error: close failed");
                             exit(0);
                         }
-                        execExternal(targetCommand->getCmdLine());
+                        execExternal(targetCommand->getExecutableCommand());
                     } else {
                         targetCommand->execute();
                         exit(0);
@@ -252,10 +248,10 @@ void ExternalCommand::execute() {
         perror("smash error: fork failed");
         return;
     } else {
-        bool isBackground = _isBackgroundCommand(this->getCmdLine().c_str());
+        bool isBackground = _isBackgroundCommand(getExecutableCommand().c_str());
         if (childPid == 0) {
             setpgrp();
-            string cmd_line = this->getCmdLine();
+            string cmd_line = getExecutableCommand();
             int position = cmd_line.find_last_of('&');
             if (isBackground) {
                 cmd_line = cmd_line.substr(0, position);
@@ -285,18 +281,18 @@ void ExternalCommand::executeRedirection() {
         perror("smash error: fork failed");
         return;
     } else {
-        bool isBackground = _isBackgroundCommand(this->getCmdLine().c_str());
+        bool isBackground = _isBackgroundCommand(getExecutableCommand().c_str());
         if (childPid == 0) {
             setpgrp();
-            string cmd_line = this->getCmdLine();
-            int position = cmd_line.find_last_of('&');
+            string cmd_line = getExecutableCommand();
+            int position = (int) cmd_line.find_last_of('&');
             if (isBackground) {
                 cmd_line = cmd_line.substr(0, position);
             }
             char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) cmd_line.c_str(), nullptr};
             string mode = commandType == SPECIAL_CHAR_REDIRECT ? "w" : "a";
             int stdout_dup_fd = dup(1);
-            FILE *outputFile = fopen(arg.c_str(), mode.c_str());
+            FILE *outputFile = fopen(out_file.c_str(), mode.c_str());
             if (outputFile == nullptr) {
                 perror("smash error: fopen failed");
             } else {
@@ -340,13 +336,9 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
     }
 }
 
-ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args, int position, int specialCharPosition)
+ShowPidCommand::ShowPidCommand(const char *cmd_line, char **args)
         : BuiltInCommand(cmd_line) {
-    if (args[position + 1] != nullptr && position + 1 != specialCharPosition) {
-        errorMessage = "smash error: showpid: too many arguments\n";
-    } else {
-        output = "smash pid is " + to_string(getpid()) + "\n";
-    }
+    output = "smash pid is " + to_string(getpid()) + "\n";
 }
 
 void ShowPidCommand::execute() {
@@ -357,15 +349,11 @@ void ShowPidCommand::execute() {
     }
 }
 
-GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args, int position, int specialCharPosition)
+GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line, char **args)
         : BuiltInCommand(cmd_line) {
-    if (args[position + 1] != nullptr && position + 1 != specialCharPosition) {
-        errorMessage = "smash error: pwd: too many arguments\n";
-    } else {
-        char buffer[FILENAME_MAX];
-        getcwd(buffer, FILENAME_MAX);
-        output = std::string(buffer) + "\n";
-    }
+    char buffer[FILENAME_MAX];
+    getcwd(buffer, FILENAME_MAX);
+    output = std::string(buffer) + "\n";
 }
 
 void GetCurrDirCommand::execute() {
@@ -790,9 +778,9 @@ void TailCommand::execute() {
     }
 }
 
-TouchCommand::TouchCommand(const char *cmd_line, char **args, int position, int specialCharPosition) : BuiltInCommand(
+TouchCommand::TouchCommand(const char *cmd_line, char **args) : BuiltInCommand(
         cmd_line) {
-    if (args[position + 3] != nullptr && position + 3 != specialCharPosition) {
+    if (args[3] != nullptr) {
         errorMessage = "smash error: touch: invalid arguments\n";
     } else {
         if (args[1] == nullptr || args[2] == nullptr) {

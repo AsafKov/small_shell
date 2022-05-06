@@ -56,47 +56,31 @@ bool isNumber(const string& arg){
     return isNumber;
 }
 
-int isSpecialCommand(char **args, int *pos){
-    string special_chars[] = {">", ">>", "|", "|&"};
-    int index = 0;
-    while(args[index] != nullptr){
-        if(args[index] == special_chars[0]){
-            *pos = index;
-            return SPECIAL_CHAR_REDIRECT;
-        }
-        if(args[index] == special_chars[1]){
-            *pos = index;
-            return SPECIAL_CHAR_REDIRECT_APPEND;
-        }
-        if(args[index] == special_chars[2]){
-            *pos = index;
-            return SPECIAL_PIPE_STDOUT;
-        }
-        if(args[index] == special_chars[3]){
-            *pos = index;
-            return SPECIAL_PIPE_STDERR;
-        }
-        index++;
-    }
-    return NOT_SPECIAL_COMMAND;
-}
-
-int specialCharStringPosition(const string& cmdline){
+unsigned int findSpecialChar(const string& cmdline, int *specialType){
     string special_chars[] = {">", ">>", "|", "|&"};
     int index = (int) cmdline.find(special_chars[0]);
-    if(index != -1){
+    if(index != string::npos){
+        *specialType = SPECIAL_CHAR_REDIRECT;
         return index;
     }
     index = (int) cmdline.find(special_chars[1]);
-    if(index != -1){
+    if(index != string::npos){
+        *specialType = SPECIAL_CHAR_REDIRECT_APPEND;
         return index;
     }
     index = (int) cmdline.find(special_chars[2]);
-    if(index != -1){
+    if(index != string::npos){
+        *specialType = SPECIAL_PIPE_STDOUT;
         return index;
     }
     index = (int) cmdline.find(special_chars[3]);
-    return index;
+    if(index != string::npos){
+        *specialType = SPECIAL_PIPE_STDERR;
+        return index;
+    }
+
+    *specialType = NOT_SPECIAL_COMMAND;
+    return cmdline.length();
 }
 
 int _parseCommandLine(const char* cmd_line, char** args) {

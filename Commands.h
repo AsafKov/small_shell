@@ -1,6 +1,7 @@
 #ifndef SMASH_COMMAND_H_
 #define SMASH_COMMAND_H_
 
+#include <utility>
 #include <vector>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
@@ -13,9 +14,12 @@ const int COMMAND_TYPE_BLOCKING = 2;
 
 class Command {
     const string cmd_line;
+    string executable_cmd;
 public:
     Command(const char* cmd_line): cmd_line(cmd_line){}
     const string getCmdLine() const { return cmd_line; }
+    void setExecutableCommand(string cmd){ executable_cmd = std::move(cmd); }
+    string getExecutableCommand(){ return executable_cmd; }
     virtual ~Command() = default;
     virtual void execute() = 0;
     //virtual void prepare();
@@ -32,11 +36,14 @@ public:
 class ExternalCommand : public Command {
 private:
     int pid;
+    string out_file;
     int commandType;
-    string arg;
 public:
     int getPid() const{ return pid; }
-    explicit ExternalCommand(const char* cmd_line, int type, string specialArg) : Command(cmd_line), commandType(type), arg(specialArg){}
+    explicit ExternalCommand(const char* cmd_line, string left_side, string outputFile, int type) : Command(cmd_line), out_file(std::move(outputFile)),
+                                                                                        commandType(type){
+        setExecutableCommand(std::move(left_side));
+    }
     virtual ~ExternalCommand() {}
     void execute() override;
     void executeRedirection();
@@ -65,11 +72,11 @@ class ChangeDirCommand : public BuiltInCommand {
     string newDir;
     string errorMessage;
 public:
-    ChangeDirCommand(const char *cmd_line, char** args, int position, int specialCharPosition): BuiltInCommand(cmd_line) {
-        if (args[position + 1] == nullptr) {
+    ChangeDirCommand(const char *cmd_line, char** args): BuiltInCommand(cmd_line) {
+        if (args[1] == nullptr) {
             errorMessage = "smash error: cd: invalid arguments\n";
         } else {
-            if(args[position + 2] != nullptr && position+2 != specialCharPosition){
+            if(args[2] != nullptr){
                 errorMessage = "smash error: cd: too many arguments\n";
             } else {
                 newDir = args[1];
@@ -84,7 +91,7 @@ class GetCurrDirCommand : public BuiltInCommand {
     string errorMessage;
     string output;
 public:
-    explicit GetCurrDirCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
+    explicit GetCurrDirCommand(const char* cmd_line, char** args);
     virtual ~GetCurrDirCommand() {}
     void execute() override;
 };
@@ -95,9 +102,9 @@ private:
     string errorMessage;
     bool isValid;
 public:
-    explicit ChangePromptCommand(const char* cmd_line, char** args, int position, int specialCharPosition): BuiltInCommand(cmd_line) {
+    explicit ChangePromptCommand(const char* cmd_line, char** args): BuiltInCommand(cmd_line) {
         isValid = true;
-        if (args[position + 1] != nullptr) {
+        if (args[1] != nullptr) {
             newPrompt = args[1];
         }
     }
@@ -110,7 +117,7 @@ class ShowPidCommand : public BuiltInCommand {
     string output;
     string fileName;
 public:
-    ShowPidCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
+    ShowPidCommand(const char* cmd_line, char** args);
     ~ShowPidCommand() override = default;
     void execute() override;
 };
@@ -272,7 +279,7 @@ class TouchCommand : public BuiltInCommand {
     string fileName;
     string timeString;
 public:
-    TouchCommand(const char* cmd_line, char** args, int position, int specialCharPosition);
+    TouchCommand(const char* cmd_line, char** args);
     virtual ~TouchCommand() {}
     void execute() override;
 };
@@ -288,7 +295,7 @@ private:
     SmallShell();
     void execExternal(string command);
 public:
-    Command *CreateCommand(const char* cmd_line, int *commandType, string &specialArg, int *isBuiltIn, string *commandAfterSplit);
+    Command *CreateCommand(const char* cmd_line, int *specialType, string &specialArg, int *commandType);
     SmallShell(SmallShell const&)      = delete; // disable copy ctor
     string getPrompt(){ return prompt; }
     void redirectStdout(Command *cmd, const string& specialArg, int redirectionType);
