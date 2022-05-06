@@ -57,25 +57,25 @@ bool isNumber(const string& arg){
 }
 
 unsigned int findSpecialChar(const string& cmdline, int *specialType){
-    string special_chars[] = {">", ">>", "|", "|&"};
+    string special_chars[] = {">>", ">", "&|", "|"};
     int index = (int) cmdline.find(special_chars[0]);
-    if(index != string::npos){
-        *specialType = SPECIAL_CHAR_REDIRECT;
-        return index;
-    }
-    index = (int) cmdline.find(special_chars[1]);
     if(index != string::npos){
         *specialType = SPECIAL_CHAR_REDIRECT_APPEND;
         return index;
     }
+    index = (int) cmdline.find(special_chars[1]);
+    if(index != string::npos){
+        *specialType = SPECIAL_CHAR_REDIRECT;
+        return index;
+    }
     index = (int) cmdline.find(special_chars[2]);
     if(index != string::npos){
-        *specialType = SPECIAL_PIPE_STDOUT;
+        *specialType = SPECIAL_PIPE_STDERR;
         return index;
     }
     index = (int) cmdline.find(special_chars[3]);
     if(index != string::npos){
-        *specialType = SPECIAL_PIPE_STDERR;
+        *specialType = SPECIAL_PIPE_STDOUT;
         return index;
     }
 
