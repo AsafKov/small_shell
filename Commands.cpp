@@ -50,38 +50,38 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     }
 
     Command *command = nullptr;
-    if (firstArg == "chprompt") {
+    if (firstArg == "chprompt" || firstArg == "chprompt&") {
         command = new ChangePromptCommand(cmd_line, args, 0, specialCharIndex);
     }
-    if (firstArg == "showpid") {
+    if (firstArg == "showpid" || firstArg == "showpid&") {
         command = new ShowPidCommand(cmd_line, args, 0, specialCharIndex);
     }
-    if (firstArg == "pwd") {
+    if (firstArg == "pwd" || firstArg == "pwd&") {
         command = new GetCurrDirCommand(cmd_line, args, 0, specialCharIndex);
     }
-    if (firstArg == "cd") {
+    if (firstArg == "cd" || firstArg == "cd&") {
         command = new ChangeDirCommand(cmd_line, args, 0, specialCharIndex);
     }
     if(firstArg == "touch"){
         command = new TouchCommand(cmd_line, args, 0, specialCharIndex);
     }
-    if (firstArg == "jobs") {
+    if (firstArg == "jobs" || firstArg == "jobs&") {
         command = new JobsCommand(cmd_line);
         *commandType = COMMAND_TYPE_BLOCKING;
     }
-    if (firstArg == "kill") {
+    if (firstArg == "kill" || firstArg == "kill&") {
         command = new KillCommand(cmd_line, args);
         *commandType = COMMAND_TYPE_BLOCKING;
     }
-    if (firstArg == "fg") {
+    if (firstArg == "fg" || firstArg == "fg&") {
         command = new ForegroundCommand(cmd_line, args);
         *commandType = COMMAND_TYPE_BLOCKING;
     }
-    if (firstArg == "quit") {
+    if (firstArg == "quit" || firstArg == "quit&") {
         command = new QuitCommand(cmd_line, args);
         *commandType = COMMAND_TYPE_BLOCKING;
     }
-    if (firstArg == "bg") {
+    if (firstArg == "bg" || firstArg == "bg&") {
         command = new BackgroundCommand(cmd_line, args);
         *commandType = COMMAND_TYPE_BLOCKING; // TODO: redirection?
     }
@@ -416,10 +416,10 @@ void JobsList::removeFinishedJobs() {
 
 void JobsList::killAll() {
     removeFinishedJobs();
-    cout << "sending SIGKILL signal to " << jobs.size() << " jobs:\n";
+    cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:\n";
     for (unsigned int i = 0; i < jobs.size(); i++) {
         if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED) {
-            cout << "" << jobs.at(i)->getId() << " " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
+            cout << "" << jobs.at(i)->getId() << ": " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
             kill(jobs.at(i)->getCommand()->getPid(), SIGKILL);
         }
     }
@@ -621,36 +621,40 @@ void QuitCommand::execute() {
 }
 
 TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[1]== nullptr){
+    string firstArg = args[1];
+    if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
-    }
-    else{
-        if (isNumber(args[1])){
-            numLines = stoi(args[1]);
-            if (args[2]== nullptr){
+    } else {
+        string numS = firstArg.substr(1, firstArg.length() - 1);
+        if (isNumber(numS) && firstArg.at(0) == '-') {
+            numLines = stoi(numS);
+            if (args[2] == nullptr) {
                 errorMessage = "smash error: tail: invalid arguments\n";
-            }
-            else {
+            } else {
                 fileName = args[2];
             }
-        }
-        else{
+        } else {
             fileName = args[1];
             numLines = 10;
         }
+
     }
 }
 
+
 void TailCommand::execute() {
     if(!errorMessage.empty()){
-        cout << errorMessage;
+        cerr << errorMessage;
     } else {
         char buffer[1];
         //char* bufferOut[numLines];
         int resultOpen = open(fileName.c_str(), O_RDONLY);
         if(resultOpen == -1){
             perror("smash error: open failed");
-        } else {
+        }
+        else if (numLines==0)
+        {}
+        else {
             int counter=1;
             int resultRead=2;
             int isEmpty=999;
@@ -745,11 +749,9 @@ void TailCommand::execute() {
                 int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
                 if(writeRes == -1){
                     perror("smash error: write failed");}
-                char space[1];
-                space[0]='\n';
-                int writeSpace=write(STDOUT_FILENO, space, 1);
-                if(writeSpace== -1){
-                    perror("smash error: write failed");}
+                close(resultOpen3);
+                close(resultOpen2);
+                close(resultOpen);
             }
             else{
                 if (countRestChars>0){
@@ -764,6 +766,9 @@ void TailCommand::execute() {
                 int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
                 if(writeRes == -1){
                     perror("smash error: write failed");}
+                close(resultOpen3);
+                close(resultOpen2);
+                close(resultOpen);
             }
 
         }
