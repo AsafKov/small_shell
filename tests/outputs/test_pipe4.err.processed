@@ -1,4 +1,0 @@
-should_not_be_filtered
-/bin/bash: -c: line 0: syntax error near unexpected token `&'
-/bin/bash: -c: line 0: `& true'
-should_be_filtered

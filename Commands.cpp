@@ -627,11 +627,13 @@ void QuitCommand::execute() {
 }
 
 TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
+    string firstArg = args[1];
     if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
     } else {
-        if (isNumber(args[1])) {
-            numLines = stoi(args[1]);
+        string numS = firstArg.substr(1, firstArg.length() - 1);
+        if (isNumber(numS) && firstArg.at(0) == '-') {
+            numLines = stoi(numS);
             if (args[2] == nullptr) {
                 errorMessage = "smash error: tail: invalid arguments\n";
             } else {
@@ -645,70 +647,74 @@ TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 }
 
 void TailCommand::execute() {
-    if (!errorMessage.empty()) {
-        cout << errorMessage;
+    if(!errorMessage.empty()){
+        cerr << errorMessage;
     } else {
         char buffer[1];
         //char* bufferOut[numLines];
         int resultOpen = open(fileName.c_str(), O_RDONLY);
-        if (resultOpen == -1) {
+        if(resultOpen == -1){
             perror("smash error: open failed");
-        } else {
-            int counter = 1;
-            int resultRead = 2;
-            int isEmpty = 999;
-            while (resultRead != 0) {
-                resultRead = read(resultOpen, buffer, 1);
-                if (resultRead == -1) {
-                    perror("smash error: read failed");
-                }
-                if (isEmpty == 999 && buffer[0] == '\0') {
+        }
+        else if (numLines==0)
+        {}
+        else {
+            int counter=1;
+            int resultRead=2;
+            int isEmpty=999;
+            while ( resultRead != 0)
+            {
+                resultRead = read(resultOpen, buffer,1);
+                if(resultRead == -1){
+                    perror("smash error: read failed");}
+                if (isEmpty == 999 && buffer[0] == '\0'){
                     exit(0);
                 }
-                isEmpty = 0;
-                if (buffer[0] == '\n') {
+                isEmpty=0;
+                if (buffer[0]=='\n') {
                     counter++;
                 }
             }
-            if (buffer[0] == '\n') {
-                counter -= 2;
+            if (buffer[0]=='\n')
+            {
+                counter-=2;
             }
 
-            if (counter < numLines && counter > 0) {
-                numLines = counter;
+            if (counter<numLines && counter>0){
+                numLines=counter;
             }
-            if (counter == 0) {
-                numLines = 1;
+            if (counter==0){
+                numLines=1;
             }
 
             int resultOpen2 = open(fileName.c_str(), O_RDONLY);
-            if (resultOpen2 == -1) {
+            if(resultOpen2 == -1) {
                 perror("smash error: open failed");
             }
-            int resultRead2 = 2;
+            int resultRead2=2;
             int resultOpen3 = open(fileName.c_str(), O_RDONLY);
-            if (resultOpen3 == -1) {
-                perror("smash error: open failed");
-            }
-            int resultRead3 = 2;
+            if(resultOpen3 == -1){
+                perror("smash error: open failed");}
+            int resultRead3=2;
 
-            int countLines = 0, countChars = 0, countRestChars = 0, countTotalLines = 0;
-            if (counter == 0) {
+            int countLines=0, countChars=0, countRestChars=0, countTotalLines=0;
+            if (counter==0)
+            {
 
-                while (resultRead2 != 0) {
-                    resultRead2 = read(resultOpen2, buffer, 1);
-                    if (resultRead2 == -1) {
-                        perror("smash error: read failed");
-                    }
+                while (resultRead2!=0)
+                {
+                    resultRead2 = read(resultOpen2, buffer,1);
+                    if(resultRead2 == -1){
+                        perror("smash error: read failed");}
                     countChars++;
                 }
                 countChars--;
-            } else {
+            }
+            else {
                 while ((countLines < numLines) && (countTotalLines <= counter)) {
                     resultRead2 = read(resultOpen2, buffer, 1);
-                    if (resultRead2 == -1) {
-                        perror("smash error: read failed");
-                    }
+                    if(resultRead2 == -1){
+                        perror("smash error: read failed");}
                     if ((buffer[0] == '\n') || (resultRead2 == 0)) {
                         if (countTotalLines >= counter - numLines) {
                             countLines++;
@@ -731,46 +737,42 @@ void TailCommand::execute() {
 
                 }
             }
-            char *bufferOut[countChars];
-            if (buffer[0] != '\n') {
-                if (countRestChars > 0) {
-                    char *bufferGarbage[countRestChars];
-                    resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
-                    if (resultRead3 == -1) {
-                        perror("smash error: read failed");
-                    }
+            char* bufferOut[countChars];
+            if (buffer[0]!='\n')
+            {
+                if (countRestChars>0){
+                    char* bufferGarbage[countRestChars];
+                    resultRead3 = read(resultOpen3, bufferGarbage,countRestChars);
+                    if(resultRead3 == -1){
+                        perror("smash error: read failed");}
                 }
                 countChars--;
-                resultRead3 = read(resultOpen3, bufferOut, countChars);
-                if (resultRead3 == -1) {
-                    perror("smash error: read failed");
-                }
+                resultRead3 = read(resultOpen3, bufferOut,countChars);
+                if(resultRead3 == -1){
+                    perror("smash error: read failed");}
                 int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                if (writeRes == -1) {
-                    perror("smash error: write failed");
+                if(writeRes == -1){
+                    perror("smash error: write failed");}
+                close(resultOpen3);
+                close(resultOpen2);
+                close(resultOpen);
+            }
+            else{
+                if (countRestChars>0){
+                    char* bufferGarbage[countRestChars];
+                    resultRead3 = read(resultOpen3, bufferGarbage,countRestChars);
+                    if(resultRead3 == -1){
+                        perror("smash error: read failed");}
                 }
-                char space[1];
-                space[0] = '\n';
-                int writeSpace = write(STDOUT_FILENO, space, 1);
-                if (writeSpace == -1) {
-                    perror("smash error: write failed");
-                }
-            } else {
-                if (countRestChars > 0) {
-                    char *bufferGarbage[countRestChars];
-                    resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
-                    if (resultRead3 == -1) {
-                        perror("smash error: read failed");
-                    }
-                }
-                resultRead3 = read(resultOpen3, bufferOut, countChars);
-                if (resultRead3 == -1) {
-                    perror("smash error: read failed");
-                }
+                resultRead3 = read(resultOpen3, bufferOut,countChars);
+                if(resultRead3 == -1){
+                    perror("smash error: read failed");}
                 int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                if (writeRes == -1) {
-                    perror("smash error: write failed");
-                }
+                if(writeRes == -1){
+                    perror("smash error: write failed");}
+                close(resultOpen3);
+                close(resultOpen2);
+                close(resultOpen);
             }
 
         }
