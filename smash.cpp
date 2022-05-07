@@ -17,12 +17,18 @@ int main(int argc, char* argv[]) {
 
     std::cout.setf(std::ios::unitbuf);
     SmallShell& smash = SmallShell::getInstance();
+//    int line = 1;
     while(smash.getIsRunning()) {
         std::cout << smash.getPrompt() << "> ";
         std::cout.flush();
         std::string cmd_line;
         std::getline(std::cin, cmd_line);
+//        if(line == 30){
+//            int a = 2;
+//        }
+//        cout<<"\nline: "<<line<<" "<<cmd_line<<"\n";
         smash.executeCommand(cmd_line.c_str());
+//        line++;
     }
     return 0;
 }
