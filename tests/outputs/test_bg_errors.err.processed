@@ -1,0 +1,4 @@
+smash error: bg:  invalid arguments
+smash error: bg: job -1 does not exist
+smash error: bg: jobs list is empty
+smash error: bg: job 500 does not exist

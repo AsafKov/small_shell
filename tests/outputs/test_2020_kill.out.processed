@@ -1,0 +1,18 @@
+smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> smash> [1] sleep 7&: 30750 1 secs
+smash> smash> [1] sleep 7&: 30750 1 secs
+[2] sleep 5&: 30804 0 secs
+smash> smash> [1] sleep 7&: 30750 2 secs
+[2] sleep 5&: 30804 1 secs
+[3] sleep 3&: 30805 1 secs
+smash> smash> smash> smash> smash> [1] sleep 10 &: 31442 3 secs
+smash> smash> smash> smash> smash> smash: got ctrl-Z
+process 2 was stopped
+smash> [1] sleep 5&: 31597 4 secs
+[2]           sleep        10   &: 31639 3 secs
+[3] sleep 15: 2 0 secs (stopped)
+smash> smash> [2]           sleep        10   &: 31639 4 secs
+[3] sleep 15: 2 1 secs (stopped)
+smash> smash> [3] sleep 15: 2 2 secs (stopped)
+smash> smash> smash> smash> smash: got ctrl-C
+process 3 was killed
+smash> smash> smash: sending SIGKILL signal to 0 jobs:
