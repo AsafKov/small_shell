@@ -841,7 +841,7 @@ void TouchCommand::execute() {
         std::time_t timestamp = mktime(&time);
         timeBuffer.modtime = timestamp;
         if (utime(fileName.c_str(), &timeBuffer) == -1) {
-            perror("smash error: touch failed");
+            perror("smash error: utime failed");
         }
     } else {
         cerr << errorMessage;
