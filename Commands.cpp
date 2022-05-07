@@ -65,23 +65,18 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     }
     if (firstArg == "jobs") {
         command = new JobsCommand(cmd_line);
-        *commandType = COMMAND_TYPE_BLOCKING;
     }
     if (firstArg == "kill") {
         command = new KillCommand(cmd_line, args);
-        *commandType = COMMAND_TYPE_BLOCKING;
     }
     if (firstArg == "fg") {
         command = new ForegroundCommand(cmd_line, args);
-        *commandType = COMMAND_TYPE_BLOCKING;
     }
     if (firstArg == "quit") {
         command = new QuitCommand(cmd_line, args);
-        *commandType = COMMAND_TYPE_BLOCKING;
     }
     if (firstArg == "bg") {
         command = new BackgroundCommand(cmd_line, args);
-        *commandType = COMMAND_TYPE_BLOCKING; // TODO: redirection?
     }
     if (firstArg == "tail") {
         command = new TailCommand(cmd_line, args);
@@ -204,19 +199,24 @@ void SmallShell::execExternal(string command) {
 }
 
 void SmallShell::redirectStdout(Command *command, const string &specialArg, int redirectionType) {
-    string mode = redirectionType == SPECIAL_CHAR_REDIRECT ? "w" : "a";
-    int stdout_dup_fd = dup(STDOUT_FILENO);
-    FILE *outputFile = fopen(specialArg.c_str(), mode.c_str());
-    if (outputFile == nullptr) {
-        perror("smash error: fopen failed");
-    } else {
-        dup2(fileno(outputFile), STDOUT_FILENO);
-        command->execute();
-        dup2(stdout_dup_fd, STDOUT_FILENO);
-        close(stdout_dup_fd);
-        if (fclose(outputFile) == -1) {
-            perror("smash error: fclose failed");
+    int pid = fork();
+    if(pid == 0){
+        int flags = O_CREAT | O_RDWR;
+        flags |= redirectionType == SPECIAL_CHAR_REDIRECT ? O_TRUNC : O_APPEND;
+        int fd = open(specialArg.c_str(), flags);
+        chmod(specialArg.c_str(), 0655);
+        if (fd == -1) {
+            perror("smash error: open failed");
+        } else {
+            dup2(fd, STDOUT_FILENO);
+            command->execute();
+            if (close(fd) == -1) {
+                perror("smash error: close failed");
+            }
         }
+        exit(0);
+    } else {
+        waitpid(pid, nullptr, WUNTRACED);
     }
 }
 
@@ -290,17 +290,18 @@ void ExternalCommand::executeRedirection() {
                 cmd_line = cmd_line.substr(0, position);
             }
             char *args[] = {(char *) "/bin/bash", (char *) "-c", (char *) cmd_line.c_str(), nullptr};
-            string mode = commandType == SPECIAL_CHAR_REDIRECT ? "w" : "a";
-            int stdout_dup_fd = dup(1);
-            FILE *outputFile = fopen(out_file.c_str(), mode.c_str());
-            if (outputFile == nullptr) {
-                perror("smash error: fopen failed");
+            int flags = O_CREAT | O_RDWR;
+            flags |= commandType == SPECIAL_CHAR_REDIRECT ? O_TRUNC : O_APPEND;
+            int fd = open(out_file.c_str(), flags);
+            chmod(out_file.c_str(), 0655);
+            if (fd == -1) {
+                perror("smash error: open failed");
             } else {
-                dup2(fileno(outputFile), 1);
+                dup2(fd, 1);
                 execv(args[0], args);
-                fclose(outputFile);
-                dup2(stdout_dup_fd, 1);
-                close(stdout_dup_fd);
+                if(close(fd) == -1){
+                    perror("smash error: close failed");
+                }
             }
             exit(0);
         } else {

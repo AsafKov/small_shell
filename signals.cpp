@@ -6,7 +6,7 @@
 using namespace std;
 
 void ctrlZHandler(int sig_num) {
-	cout << "smash: got ctrl-Z\n";
+    cout << "smash: got ctrl-Z\n";
     SmallShell &smash = SmallShell::getInstance();
 
     int foregroundCmdPid = smash.getForegroundCommandPid();
@@ -19,7 +19,7 @@ void ctrlZHandler(int sig_num) {
 }
 
 void ctrlCHandler(int sig_num) {
-  	cout << "smash: got ctrl-C\n";
+    cout << "smash: got ctrl-C\n";
     SmallShell &smash = SmallShell::getInstance();
 
     int foregroundCmdPid = smash.getForegroundCommandPid();
@@ -31,6 +31,5 @@ void ctrlCHandler(int sig_num) {
 }
 
 void alarmHandler(int sig_num) {
-  // TODO: Add your implementation
+    // TODO: Add your implementation
 }
-

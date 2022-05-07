@@ -41,7 +41,7 @@ private:
 public:
     int getPid() const{ return pid; }
     explicit ExternalCommand(const char* cmd_line, string left_side, string outputFile, int type) : Command(cmd_line), out_file(std::move(outputFile)),
-                                                                                        commandType(type){
+                                                                                                    commandType(type){
         setExecutableCommand(std::move(left_side));
     }
     virtual ~ExternalCommand() {}
@@ -135,7 +135,7 @@ public:
     static const int NOT_FOUND = -1;
     class JobEntry {
         const int jobId;
-         time_t initTime;
+        time_t initTime;
         const ExternalCommand* command;
         int status = STATUS_ACTIVE; // 0-active, 1-stopped, 2-killed
 
