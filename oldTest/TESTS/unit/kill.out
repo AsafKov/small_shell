@@ -1,0 +1,36 @@
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: job-id 1 does not exist
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: job-id 1 does not exist
+smash> smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: invalid arguments
+smash> smash> smash error: kill: job-id 1 does not exist
+smash> smash> smash> smash error: kill failed: Invalid argument
+smash> [1] sleep 10&: 5197 0 secs
+smash> smash> [1] sleep 10&: 5197 0 secs
+[2] sleep 5&: 5198 0 secs
+smash> smash> [1] sleep 10&: 5197 2 secs
+[2] sleep 5&: 5198 2 secs
+[3] sleep 3&: 5199 2 secs
+smash> smash error: kill: invalid arguments
+smash> smash error: kill: too many arguments
+smash> smash> smash> [1] sleep 10 &: 5200 3 secs
+smash> smash> smash> smash> smash> smash: got ctrl-Z
+process 5203 was stopped
+smash> [1] sleep 5&: 5201 0 secs
+[2]           sleep        10   &: 5202 0 secs
+[3] sleep 15: 5203 0 secs (stopped)
+smash> smash> [2]           sleep        10   &: 5202 0 secs
+[3] sleep 15: 5203 0 secs (stopped)
+smash> smash> [3] sleep 15: 5203 0 secs (stopped)
+smash> smash> smash> smash> smash> [1] sleep 10&: 5204 2 secs
+smash> smash: got ctrl-C
+process 5205 was killed
+smash> smash> sending SIGKILL signal to 0 jobs:

@@ -1,0 +1,115 @@
+smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> test_redirec
+smash> cat: new: No such file or directory
+smash> again_redirec
+smash> cat: new: No such file or directory
+smash> test_redirec
+smash> cat: new: No such file or directory
+smash> smash pid is 5083
+smash> smash> smash pid is 5083
+smash> smash> smash pid is 5083
+smash> smash> mypid
+my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> smash> smash> cat: s: No such file or directory
+smash> smash> cat: k: No such file or directory
+smash> smash> cat: t: No such file or directory
+smash> mypid
+my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> smash error: fopen failed: No such file or directory
+smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> before
+smash> cat: new: No such file or directory
+smash> chmod: cannot access 'new': No such file or directory
+smash> smash> smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> /bin/bash: l: command not found
+smash> cat: new: No such file or directory
+smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> rm: cannot remove 'new': No such file or directory
+smash> /bin/bash: l: command not found
+smash> cat: new: No such file or directory
+smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> rm: cannot remove 'new': No such file or directory
+smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> cat: new: No such file or directory
+smash> smash> smash> mypid
+my_sleep
+p
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+test
+smash> smash> 0
+2
+4
+Done: 6
+smash> sending SIGKILL signal to 1 jobs:
+1 sleep 100&
+smash> 

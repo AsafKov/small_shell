@@ -1,0 +1,13 @@
+smash> head not_exists
+head -5 not_exists
+echo -e "hello1\nhello2\nhello3\nhello4\nhello5\nhello6\nhello7\nhello8\nhello9\nhello10\nhello11" > tmp
+head -1 tmp
+head -2 tmp
+head -3 tmp
+head -20 tmp
+head tmp
+head -20 tmp | grep 1
+echo -e -n "hello1\nhello2\nhello3" > tmp
+smash> head: cannot open 'tmp' for reading: No such file or directory
+smash> head: cannot open 'tmp' for reading: No such file or directory
+smash> 

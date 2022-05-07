@@ -1,0 +1,44 @@
+smash> my_sleep
+random1.txt
+ransmash> look here
+smash> /bin/bash: not_real_command: command not found
+smash> smash> smash> smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> 0
+2
+Done: 3
+smash> smash pid is 5134
+smash> smash pid is 5134
+smash> /tmp/smash_test
+smash> smash> [1] sleep 100&: 5158 0 secs
+smash> /tmp/smash_test
+smash> smash> smash> [1] sleep 100&: 5158 0 secs
+[2] sleep 20&: 5161 0 secs
+[3] sleep 10&: 5162 0 secs
+smash> smash error: kill: too many arguments
+smash> smash error: kill: too many arguments
+smash> [1] sleep 100&: 5158 1 secs
+[2] sleep 20&: 5161 1 secs
+[3] sleep 10&: 5162 1 secs
+smash> smash> smash> [2] sleep 20&: 5161 2 secs
+[3] sleep 10&: 5162 2 secs
+[4] sleep 10 &: 5171 1 secs
+smash> smash error: open failed: No such file or directory
+smash> smash error: open failed: No such file or directory
+smash> smash error: open failed: No such file or directory
+smash> smash error: open failed: No such file or directory
+smash> smash error: open failed: No such file or directory
+smash> smash error: open failed: No such file or directory
+smash> smash error: kill: too many arguments
+smash> /bin/bash: not_real_comman: command not found
+smash> [2] sleep 20&: 5161 3 secs
+[3] sleep 10&: 5162 3 secs
+[4] sleep 10 &: 5171 2 secs
+smash> sending SIGKILL signal to 3 jobs:
+2 sleep 20&
+3 sleep 10&
+4 sleep 10 &

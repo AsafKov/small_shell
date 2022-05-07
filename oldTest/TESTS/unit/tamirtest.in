@@ -1,0 +1,86 @@
+timeout 110 sleep 20 &
+sleep 150
+!time.sleep(6)
+CtrlZ
+jobs
+timeout 15 sleep 150
+!time.sleep(6)
+CtrlC
+jobs
+cat test_in > tamir_out
+cat tamir_out
+showpid >> tamir_out
+cat tamir_out | grep tamirtest
+cat test_in2 > tamir_out
+cat tamir_out | grep tamirtest
+cat tamir_out
+timeout 15 sleep 5&
+timeout 10 sleep 16&
+timeout 30 sleep 7 &
+jobs
+!time.sleep(15)
+CtrlC
+CtrlZ
+showpid &
+showpid&
+CtrlZ
+jobs
+!time.sleep(15)
+fg 2
+!time.sleep(5)
+CtrlZ
+jobs
+sleep 15&
+sleep 100&
+fg 3
+CtrlZ
+!time.sleep(5)
+jobs
+bg 3
+!time.sleep(5)
+jobs
+timeout 20 sleep 150&
+!time.sleep(5)
+kill -9 4
+!time.sleep(5)
+jobs
+kill -19 3
+!time.sleep(5)
+sleep 200&
+kill -18 3
+!time.sleep(7)
+jobs
+sleep 100&
+sleep 200&
+sleep 500 &
+jobs
+kill -19 8
+!time.sleep(5)
+sleep 200&
+kill -18 8
+!time.sleep(7)
+jobs
+fg 10
+!time.sleep(7)
+CtrlZ
+fg 7
+!time.sleep(7)
+CtrlZ
+fg 8
+!time.sleep(7)
+CtrlC
+jobs
+timeout 10 sleep 150&
+pwd
+cd -
+cd -
+pwd
+!time.sleep(5)
+echo "did I pass the test?" > test_res
+!time.sleep(5)
+cat test_res |& tail -c 12
+echo "I hope so" >> test_res
+cat test_res
+echo "Bye Bye"
+!time.sleep(10)
+quit kill

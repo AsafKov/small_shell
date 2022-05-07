@@ -1,0 +1,21 @@
+smash> Try 'timeout --help' for more information.
+smash> Try 'timeout --help' for more information.
+smash> timeout: invalid option -- '4'
+Try 'timeout --help' for more information.
+smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+smash> before
+smash> after
+smash> 0
+Done: 2
+smash> after
+smash> 0
+2
+smash> smash: got ctrl-C
+smash> smash> 0
+[1] timeout 3 ./my_sleep 4 &: 5237 0 secs
+smash> 2
