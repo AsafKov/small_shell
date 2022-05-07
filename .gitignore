@@ -1,2 +1,7 @@
 # Project exclude paths
 /cmake-build-debug/
+/tests/outputs/
+/tests/expected/
+/tests/inputs/
+/tests/required_folder/
+/tests/runner/
