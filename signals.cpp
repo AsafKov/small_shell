@@ -12,7 +12,7 @@ void ctrlZHandler(int sig_num) {
     int foregroundCmdPid = smash.getForegroundCommandPid();
     if(foregroundCmdPid != -1){
         kill(foregroundCmdPid, SIGSTOP);
-        cout << "process " << foregroundCmdPid << " was stopped\n";
+        cout << "smash: process " << foregroundCmdPid << " was stopped\n";
         smash.pushToBackground();
         smash.clearForegroundJob();
     }
@@ -25,7 +25,7 @@ void ctrlCHandler(int sig_num) {
     int foregroundCmdPid = smash.getForegroundCommandPid();
     if(foregroundCmdPid != -1){
         kill(foregroundCmdPid, SIGKILL);
-        cout << "process " << foregroundCmdPid << " was killed\n";
+        cout << "smash: process " << foregroundCmdPid << " was killed\n";
         smash.clearForegroundJob();
     }
 }
