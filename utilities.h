@@ -58,7 +58,7 @@ bool isNumber(const string& arg){
 
 unsigned int findSpecialChar(const string& cmdline, int *specialType){
     string special_chars[] = {">>", ">", "&|", "|"};
-    int index = (int) cmdline.find(special_chars[0]);
+    long index = (int) cmdline.find(special_chars[0]);
     if(index != string::npos){
         *specialType = SPECIAL_CHAR_REDIRECT_APPEND;
         return index;

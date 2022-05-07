@@ -46,6 +46,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     char **args = new char *[COMMAND_MAX_ARGS];
 
     _parseCommandLine(left_side.c_str(), args);
+//    cout<< "\n command is: " << firstArg << "\n";
 
     Command *command = nullptr;
     if (firstArg == "chprompt") {
@@ -424,7 +425,7 @@ void JobsList::killAll() {
     cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:\n";
     for (unsigned int i = 0; i < jobs.size(); i++) {
         if (jobs.at(i)->getStatus() == STATUS_ACTIVE || jobs.at(i)->getStatus() == STATUS_STOPPED) {
-            cout << "" << jobs.at(i)->getId() << ": " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
+            cout << "" << jobs.at(i)->getCommand()->getPid() << ": " << jobs.at(i)->getCommand()->getCmdLine() << "\n";
             kill(jobs.at(i)->getCommand()->getPid(), SIGKILL);
         }
     }
@@ -436,7 +437,7 @@ void JobsList::printJobsList() {
     for (JobEntry *entry: jobs) {
         if (entry == foregroundJob) continue;
         cmd = (ExternalCommand *) entry->getCommand();
-        cout << "[" << entry->getId() << "] " << cmd->getCmdLine() << ": " << cmd->getPid() << " "
+        cout << "[" << entry->getId() << "] " << cmd->getCmdLine() << " : " << cmd->getPid() << " "
              << difftime(time(nullptr), entry->getInitTime()) << " secs";
         if (entry->getStatus() == STATUS_STOPPED) {
             cout << " (stopped)\n";
@@ -503,6 +504,7 @@ void KillCommand::execute() {
             if (kill(jobPid, sigNum) == -1) {
                 perror("smash error: kill failed");
             } else {
+                cout << "signal number " << sigNum << " was sent to pid " << jobPid << "\n";
                 switch (sigNum) {
                     case SIGTSTP: {
                         smash.changeJobStatus(jobId, JobsList::STATUS_STOPPED);
@@ -514,6 +516,10 @@ void KillCommand::execute() {
                     }
                     case SIGCONT: {
                         smash.changeJobStatus(jobId, JobsList::STATUS_ACTIVE);
+                        break;
+                    }
+                    case SIGKILL: {
+                        smash.changeJobStatus(jobId, JobsList::STATUS_KILLED);
                         break;
                     }
                 }
@@ -533,7 +539,7 @@ ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltI
             } else {
                 jobId = stoi(args[1]);
                 if (jobId < 1) {
-                    errorMessage = "smash error: fg: job " + string(args[1]) + " does not exist\n";
+                    errorMessage = "smash error: fg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
         } else {
@@ -553,10 +559,10 @@ void ForegroundCommand::execute() {
             if (jobId == 0) {
                 cerr << "smash error: fg: jobs list is empty\n";
             } else {
-                cerr << "smash error: fg: job " << jobId << " does not exist\n";
+                cerr << "smash error: fg: job-id " << jobId << " does not exist\n";
             }
         } else {
-            cout << cmd->getCmdLine() << ": " << cmd->getPid() << "\n";
+            cout << cmd->getCmdLine() << " : " << cmd->getPid() << "\n";
             kill(cmd->getPid(), SIGCONT);
             waitpid(cmd->getPid(), &status, WUNTRACED);
             smash.clearForegroundJob();
@@ -570,13 +576,13 @@ BackgroundCommand::BackgroundCommand(const char *cmd_line, char **args) : BuiltI
         errorMessage = "smash error: bg:  invalid arguments\n";
     } else {
         if (args[1] != nullptr) {
-            if (!isNumber(args[1])) {
+            if (!isNumber(args[1]) && !isNumber(args[1]+1)) {
                 // TODO: is jobId < 0 invalid argument?
                 errorMessage = "smash error: fg: invalid arguments\n";
             } else {
                 jobId = stoi(args[1]);
                 if (jobId < 1) {
-                    errorMessage = "smash error: bg: job " + string(args[1]) + " does not exist\n";
+                    errorMessage = "smash error: bg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
         } else {
@@ -596,11 +602,13 @@ void BackgroundCommand::execute() {
             if (jobId == 0) {
                 cerr << "smash error: bg: jobs list is empty\n";
             } else {
-                cerr << "smash error: bg: job " << jobId << " does not exist\n";
+                cerr << "smash error: bg: job-id " << jobId << " does not exist\n";
             }
         } else {
-            cout << cmd->getCmdLine() << "\n";
-            kill(cmd->getPid(), SIGCONT);
+            if(cmd != nullptr){
+                cout << cmd->getCmdLine() << " : " << id << "\n";
+                kill(cmd->getPid(), SIGCONT);
+            }
         }
     }
 }

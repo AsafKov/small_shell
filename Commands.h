@@ -197,13 +197,14 @@ public:
 
         if(jobEntry != nullptr){
             *id = jobEntry->getId();
-            if (jobEntry->getStatus()!=STATUS_STOPPED)
-            {
-                cout << "smash error: bg: job-id " << jobId << "  is already running in the background\n";
+            if (jobEntry->getStatus() != STATUS_STOPPED){
+                cerr << "smash error: bg: job-id " << jobId << " is already running in the background\n";
+                return nullptr;
             }
             jobEntry->changeStatus(STATUS_ACTIVE);
+            return (ExternalCommand*)jobEntry->getCommand();
         }
-        return jobEntry != nullptr? (ExternalCommand*)jobEntry->getCommand(): nullptr;
+        return nullptr;
     }
     void removeFinishedJobs();
     JobEntry * getJobById(int jobId);
@@ -304,8 +305,13 @@ public:
     }
     void addJob(ExternalCommand *command){ jobList->addJob(command); }
     void removeFinishedJobs(){ jobList->removeFinishedJobs(); }
-    void changeJobStatus(int jobId, int newStatus){
-        jobList->getJobById(jobId)->changeStatus(newStatus);
+    bool changeJobStatus(int jobId, int newStatus){
+        JobsList::JobEntry *entry = jobList->getJobById(jobId);
+        if(entry != nullptr){
+            entry->changeStatus(newStatus);
+            return true;
+        }
+        return false;
     }
     void removeJobById(int jobId)
     {
@@ -334,7 +340,6 @@ public:
     }
 
     ExternalCommand *pushToForeground(int jobId, int *id){
-        // TODO: What happens if stopped command is pushed to foreground? Continue?
         ExternalCommand *cmd = jobList->pushToForeground(jobId, id);
         if(cmd != nullptr){
             foregroundCommand = cmd;
@@ -343,9 +348,6 @@ public:
     }
     ExternalCommand *resumeStopped(int jobId, int *id){
         ExternalCommand *cmd = jobList->resumeStopped(jobId, id);
-        if(cmd != nullptr){
-            changeJobStatus(jobId, 0);
-        }
         return cmd;
     }
     string getPrevDirectory(){ return prevDirectory; }
