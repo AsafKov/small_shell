@@ -317,7 +317,7 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
         errorMessage = "smash error: kill: invalid arguments\n";
     } else {
         if (args[3] != nullptr) { // Too many
-            errorMessage = "smash error: kill: too many arguments\n";
+            errorMessage = "smash error: kill: invalid arguments\n";
         } else { // *chef's kiss*
             bool isProperFormat = true;
             string firstArg = args[1];
@@ -327,6 +327,9 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
             isProperFormat &= isNumber(args[2]);
             if (isProperFormat) {
                 sigNum = stoi(firstArg);
+                if(sigNum > 64){
+                    errorMessage = "smash error: kill: invalid arguments\n";
+                }
                 jobId = stoi(args[2]);
             } else {
                 errorMessage = "smash error: kill: invalid arguments\n";
