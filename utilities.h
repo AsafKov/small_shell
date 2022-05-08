@@ -19,10 +19,10 @@ using namespace std;
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 const int NOT_SPECIAL_COMMAND = -1;
-const int SPECIAL_CHAR_REDIRECT = 0;
-const int SPECIAL_CHAR_REDIRECT_APPEND = 1;
-const int SPECIAL_PIPE_STDOUT = 2;
-const int SPECIAL_PIPE_STDERR = 3;
+const int SPECIAL_CHAR_REDIRECT_APPEND = 0;
+const int SPECIAL_CHAR_REDIRECT = 1;
+const int SPECIAL_PIPE_STDERR = 2;
+const int SPECIAL_PIPE_STDOUT = 3;
 
 string _ltrim(const std::string& s)
 {
@@ -57,23 +57,23 @@ bool isNumber(const string& arg){
 }
 
 unsigned int findSpecialChar(const string& cmdline, int *specialType){
-    string special_chars[] = {">>", ">", "&|", "|"};
-    long index = (int) cmdline.find(special_chars[0]);
+    string special_chars[] = {">>", ">", "|&", "|"};
+    long index = (int) cmdline.find(special_chars[0].c_str(), 0, 2);
     if(index != string::npos){
         *specialType = SPECIAL_CHAR_REDIRECT_APPEND;
         return index;
     }
-    index = (int) cmdline.find(special_chars[1]);
+    index = (int) cmdline.find(special_chars[1].c_str(), 0, 1);
     if(index != string::npos){
         *specialType = SPECIAL_CHAR_REDIRECT;
         return index;
     }
-    index = (int) cmdline.find(special_chars[2]);
+    index = (int) cmdline.find(special_chars[2].c_str(), 0, 2);
     if(index != string::npos){
         *specialType = SPECIAL_PIPE_STDERR;
         return index;
     }
-    index = (int) cmdline.find(special_chars[3]);
+    index = (int) cmdline.find(special_chars[3].c_str(), 0, 1);
     if(index != string::npos){
         *specialType = SPECIAL_PIPE_STDOUT;
         return index;

@@ -32,7 +32,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     string string_cmdline = cmd_line;
     unsigned int splitAt = findSpecialChar(string_cmdline, specialType);
     string left_side = string_cmdline.substr(0, splitAt);
-    string right_side;
+    string right_side = left_side;
     if (*specialType != NOT_SPECIAL_COMMAND) {
         int length = *specialType == SPECIAL_CHAR_REDIRECT || *specialType == SPECIAL_PIPE_STDOUT ? 1 : 2;
         right_side = string_cmdline.substr(splitAt + length, string_cmdline.length() - 1);
@@ -317,7 +317,7 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
         errorMessage = "smash error: kill: invalid arguments\n";
     } else {
         if (args[3] != nullptr) { // Too many
-            errorMessage = "smash error: kill: too many arguments\n";
+            errorMessage = "smash error: kill: invalid arguments\n";
         } else { // *chef's kiss*
             bool isProperFormat = true;
             string firstArg = args[1];
@@ -327,6 +327,9 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
             isProperFormat &= isNumber(args[2]);
             if (isProperFormat) {
                 sigNum = stoi(firstArg);
+                if (sigNum > 64) {
+                    errorMessage = "smash error: kill: invalid arguments\n";
+                }
                 jobId = stoi(args[2]);
             } else {
                 errorMessage = "smash error: kill: invalid arguments\n";
@@ -529,10 +532,10 @@ void KillCommand::execute() {
 }
 
 ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[2] != nullptr) {
-        errorMessage = "smash error: fg: too many arguments\n";
-    } else {
-        if (args[1] != nullptr) {
+    if (args[1] != nullptr) {
+        if (args[2] != nullptr) {
+            errorMessage = "smash error: fg: invalid arguments\n";
+        } else {
             if (!isNumber(args[1])) {
                 // TODO: is jobId < 0 invalid argument?
                 errorMessage = "smash error: fg: invalid arguments\n";
@@ -542,9 +545,9 @@ ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltI
                     errorMessage = "smash error: fg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
-        } else {
-            jobId = LATEST_JOB;
         }
+    } else {
+        jobId = LATEST_JOB;
     }
 }
 
@@ -572,22 +575,22 @@ void ForegroundCommand::execute() {
 
 
 BackgroundCommand::BackgroundCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[2] != nullptr) {
-        errorMessage = "smash error: bg:  invalid arguments\n";
-    } else {
-        if (args[1] != nullptr) {
-            if (!isNumber(args[1]) && !isNumber(args[1]+1)) {
+    if (args[1] != nullptr) {
+        if (args[2] != nullptr) {
+            errorMessage = "smash error: bg: invalid arguments\n";
+        } else {
+            if (!isNumber(args[1]) && !isNumber(args[1] + 1)) {
                 // TODO: is jobId < 0 invalid argument?
-                errorMessage = "smash error: fg: invalid arguments\n";
+                errorMessage = "smash error: bg: invalid arguments\n";
             } else {
                 jobId = stoi(args[1]);
                 if (jobId < 1) {
                     errorMessage = "smash error: bg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
-        } else {
-            jobId = LATEST_JOB;
         }
+    } else {
+        jobId = LATEST_JOB;
     }
 }
 
@@ -600,12 +603,12 @@ void BackgroundCommand::execute() {
         ExternalCommand *cmd = smash.resumeStopped(jobId, &id);
         if (id <= 0) {
             if (jobId == 0) {
-                cerr << "smash error: bg: jobs list is empty\n";
+                cerr << "smash error: bg: there is no stopped jobs to resume\n";
             } else {
                 cerr << "smash error: bg: job-id " << jobId << " does not exist\n";
             }
         } else {
-            if(cmd != nullptr){
+            if (cmd != nullptr) {
                 cout << cmd->getCmdLine() << " : " << id << "\n";
                 kill(cmd->getPid(), SIGCONT);
             }
@@ -845,6 +848,7 @@ void TouchCommand::execute() {
         std::time_t timestamp = mktime(&time);
         timeBuffer.actime = timestamp;
         timeBuffer.modtime = timestamp;
+        struct stat fileInfo{};
         if (utime(fileName.c_str(), &timeBuffer) == -1) {
             perror("smash error: utime failed");
         }
