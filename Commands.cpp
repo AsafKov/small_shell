@@ -637,11 +637,15 @@ TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
     if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
     }
-    else if (args[3]!=nullptr)
-    {
-        errorMessage = "smash error: tail: invalid arguments\n";
-    }
+
     else {
+        if (args[2]!=nullptr)
+        {
+            if (args[3]!=nullptr)
+            {
+                errorMessage = "smash error: tail: invalid arguments\n";
+            }
+        }
         string firstArg = args[1];
         string numS = firstArg.substr(1, firstArg.length() - 1);
         if (isNumber(numS))
@@ -839,6 +843,7 @@ void TouchCommand::execute() {
         strptime(timeString.c_str(), "%S:%M:%H:%d:%m:%Y", &time);
         struct utimbuf timeBuffer{};
         std::time_t timestamp = mktime(&time);
+        timeBuffer.actime = timestamp;
         timeBuffer.modtime = timestamp;
         if (utime(fileName.c_str(), &timeBuffer) == -1) {
             perror("smash error: utime failed");
