@@ -291,7 +291,7 @@ private:
     string prompt;
     string prevDirectory;
     JobsList *jobList;
-    ExternalCommand *foregroundCommand;
+    ExternalCommand *foregroundCommand{};
     bool isRunning;
     SmallShell();
     void execExternal(string command);
