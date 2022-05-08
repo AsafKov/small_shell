@@ -831,7 +831,9 @@ void TouchCommand::execute() {
         strptime(timeString.c_str(), "%S:%M:%H:%d:%m:%Y", &time);
         struct utimbuf timeBuffer{};
         std::time_t timestamp = mktime(&time);
+        timeBuffer.actime = timestamp;
         timeBuffer.modtime = timestamp;
+        struct stat fileInfo{};
         if (utime(fileName.c_str(), &timeBuffer) == -1) {
             perror("smash error: utime failed");
         }
