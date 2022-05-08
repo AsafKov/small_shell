@@ -609,7 +609,7 @@ void BackgroundCommand::execute() {
             }
         } else {
             if (cmd != nullptr) {
-                cout << cmd->getCmdLine() << " : " << id << "\n";
+                cout << cmd->getCmdLine() << " : " << cmd->getPid() << "\n";
                 kill(cmd->getPid(), SIGCONT);
             }
         }
