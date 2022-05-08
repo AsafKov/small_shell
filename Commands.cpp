@@ -639,9 +639,13 @@ TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 
     if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
-    } else if (args[3] != nullptr) {
-        errorMessage = "smash error: tail: invalid arguments\n";
-    } else {
+    }
+    else {
+        if (args[2] != nullptr){
+            if(args[3] != nullptr){
+                errorMessage = "smash error: tail: invalid arguments\n";
+            }
+        }
         string firstArg = args[1];
         string numS = firstArg.substr(1, firstArg.length() - 1);
         if (isNumber(numS)) {
