@@ -123,8 +123,12 @@ void SmallShell::executeCommand(const char *cmd_line) {
             }
 
             if (srcPid == 0) {
-                setpgrp();
-                dup2(pipeline[1], outChannelFd);
+                if(setpgrp() == -1){
+                    perror("smash error: setpgrp failed");
+                }
+                if(dup2(pipeline[1], outChannelFd) == -1){
+                    perror("smash error: dup2 failed");
+                }
                 if (firstCmdType == COMMAND_TYPE_EXTERNAL) {
                     if (close(pipeline[0]) == -1) {
                         perror("smash error: close failed");
@@ -149,8 +153,12 @@ void SmallShell::executeCommand(const char *cmd_line) {
                 exit(0);
             } else {
                 if (targetPid == 0) {
-                    setpgrp();
-                    dup2(pipeline[0], STDIN_FILENO);
+                    if(setpgrp() == -1){
+                        perror("smash error: setpgrp failed");
+                    }
+                    if(dup2(pipeline[0], STDIN_FILENO) == -1){
+                        perror("smash error: dup2 failed");
+                    }
                     if (commandType == COMMAND_TYPE_EXTERNAL) {
                         if (close(pipeline[0]) == -1) {
                             perror("smash error: close failed");
@@ -205,16 +213,25 @@ void SmallShell::redirectStdout(Command *command, const string &specialArg, int 
     int fd = open(specialArg.c_str(), flags);
     chmod(specialArg.c_str(), 0655);
     int dup_out = dup(STDOUT_FILENO);
+    if(dup_out == -1){
+        perror("smash error: dup failed");
+    }
     if (fd == -1) {
         perror("smash error: open failed");
     } else {
-        dup2(fd, STDOUT_FILENO);
+        if(dup2(fd, STDOUT_FILENO) == -1){
+            perror("smash error: dup2 failed");
+        }
         command->execute();
         if (close(fd) == -1) {
             perror("smash error: close failed");
         }
-        dup2(dup_out, STDOUT_FILENO);
-        close(dup_out);
+        if(dup2(dup_out, STDOUT_FILENO) == -1){
+            perror("smash error: dup2 failed");
+        }
+        if(close(dup_out) == -1){
+            perror("smash error: close failed");
+        }
     }
 }
 
@@ -248,7 +265,9 @@ void ExternalCommand::execute() {
     } else {
         bool isBackground = _isBackgroundCommand(getExecutableCommand().c_str());
         if (childPid == 0) {
-            setpgrp();
+            if(setpgrp() == -1){
+                perror("smash error: setpgrp failed");
+            }
             string cmd_line = getExecutableCommand();
             int position = cmd_line.find_last_of('&');
             if (isBackground) {
@@ -281,7 +300,9 @@ void ExternalCommand::executeRedirection() {
     } else {
         bool isBackground = _isBackgroundCommand(getExecutableCommand().c_str());
         if (childPid == 0) {
-            setpgrp();
+            if(setpgrp() == -1){
+                perror("smash error: setpgrp failed");
+            }
             string cmd_line = getExecutableCommand();
             int position = (int) cmd_line.find_last_of('&');
             if (isBackground) {
@@ -295,8 +316,12 @@ void ExternalCommand::executeRedirection() {
             if (fd == -1) {
                 perror("smash error: open failed");
             } else {
-                dup2(fd, 1);
-                execv(args[0], args);
+                if(dup2(fd, 1) == -1){
+                    perror("smash error: dup2 failed");
+                }
+                if(execv(args[0], args) == -1){
+                    perror("smash error: execv failed");
+                }
                 if (close(fd) == -1) {
                     perror("smash error: close failed");
                 }
@@ -795,9 +820,15 @@ void TailCommand::execute() {
                         if (writeRes == -1) {
                             perror("smash error: write failed");
                         }
-                        close(resultOpen3);
-                        close(resultOpen2);
-                        close(resultOpen);
+                        if(close(resultOpen3) == -1){
+                            perror("smash error: close failed");
+                        }
+                        if(close(resultOpen2) == -1){
+                            perror("smash error: close failed");
+                        }
+                        if(close(resultOpen) == -1){
+                            perror("smash error: close failed");
+                        }
                     } else {
                         if (countRestChars > 0) {
                             char *bufferGarbage[countRestChars];
@@ -814,9 +845,15 @@ void TailCommand::execute() {
                         if (writeRes == -1) {
                             perror("smash error: write failed");
                         }
-                        close(resultOpen3);
-                        close(resultOpen2);
-                        close(resultOpen);
+                        if(close(resultOpen3) == -1){
+                            perror("smash error: close failed");
+                        }
+                        if(close(resultOpen2) == -1){
+                            perror("smash error: close failed");
+                        }
+                        if(close(resultOpen) == -1){
+                            perror("smash error: close failed");
+                        }
                     }
 
                 }
