@@ -327,7 +327,7 @@ KillCommand::KillCommand(const char *cmdLine, char **args) : BuiltInCommand(cmdL
             isProperFormat &= isNumber(args[2]);
             if (isProperFormat) {
                 sigNum = stoi(firstArg);
-                if(sigNum > 64){
+                if (sigNum > 64) {
                     errorMessage = "smash error: kill: invalid arguments\n";
                 }
                 jobId = stoi(args[2]);
@@ -575,22 +575,22 @@ void ForegroundCommand::execute() {
 
 
 BackgroundCommand::BackgroundCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[2] != nullptr) {
-        errorMessage = "smash error: bg:  invalid arguments\n";
-    } else {
-        if (args[1] != nullptr) {
-            if (!isNumber(args[1]) && !isNumber(args[1]+1)) {
+    if (args[1] != nullptr) {
+        if (args[2] != nullptr) {
+            errorMessage = "smash error: bg: invalid arguments\n";
+        } else {
+            if (!isNumber(args[1]) && !isNumber(args[1] + 1)) {
                 // TODO: is jobId < 0 invalid argument?
-                errorMessage = "smash error: fg: invalid arguments\n";
+                errorMessage = "smash error: bg: invalid arguments\n";
             } else {
                 jobId = stoi(args[1]);
                 if (jobId < 1) {
                     errorMessage = "smash error: bg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
-        } else {
-            jobId = LATEST_JOB;
         }
+    } else {
+        jobId = LATEST_JOB;
     }
 }
 
@@ -603,12 +603,12 @@ void BackgroundCommand::execute() {
         ExternalCommand *cmd = smash.resumeStopped(jobId, &id);
         if (id <= 0) {
             if (jobId == 0) {
-                cerr << "smash error: bg: jobs list is empty\n";
+                cerr << "smash error: bg: there is no stopped jobs to resume\n";
             } else {
                 cerr << "smash error: bg: job-id " << jobId << " does not exist\n";
             }
         } else {
-            if(cmd != nullptr){
+            if (cmd != nullptr) {
                 cout << cmd->getCmdLine() << " : " << id << "\n";
                 kill(cmd->getPid(), SIGCONT);
             }
@@ -639,37 +639,26 @@ TailCommand::TailCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd
 
     if (args[1] == nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
-    }
-    else if (args[3]!=nullptr)
-    {
+    } else if (args[3] != nullptr) {
         errorMessage = "smash error: tail: invalid arguments\n";
-    }
-    else {
+    } else {
         string firstArg = args[1];
         string numS = firstArg.substr(1, firstArg.length() - 1);
-        if (isNumber(numS))
-        {
-            if (firstArg.at(0) == '-')
-            {
+        if (isNumber(numS)) {
+            if (firstArg.at(0) == '-') {
                 numLines = stoi(numS);
                 if (args[2] == nullptr) {
                     errorMessage = "smash error: tail: invalid arguments\n";
                 } else {
                     fileName = args[2];
                 }
-            }
-            else if (args[2]!=nullptr)
-            {
+            } else if (args[2] != nullptr) {
                 errorMessage = "smash error: tail: invalid arguments\n";
             }
-        }
-        else {
-            if (args[2]!=nullptr)
-            {
+        } else {
+            if (args[2] != nullptr) {
                 errorMessage = "smash error: tail: invalid arguments\n";
-            }
-            else
-            {
+            } else {
                 fileName = args[1];
                 numLines = 10;
             }
@@ -702,124 +691,124 @@ void TailCommand::execute() {
                     isEmpty = 1;
                     break;
                 }
-                isEmpty=0;
+                isEmpty = 0;
 
                 if (buffer[0] == '\n') {
                     counter++;
                 }
             }
             if (!isEmpty) {
-                    if (buffer[0] == '\n') {
-                        counter -= 2;
-                    }
+                if (buffer[0] == '\n') {
+                    counter -= 2;
+                }
 
-                    if (counter < numLines && counter > 0) {
-                        numLines = counter;
-                    }
-                    if (counter == 0) {
-                        numLines = 1;
-                    }
+                if (counter < numLines && counter > 0) {
+                    numLines = counter;
+                }
+                if (counter == 0) {
+                    numLines = 1;
+                }
 
-                    int resultOpen2 = open(fileName.c_str(), O_RDONLY);
-                    if (resultOpen2 == -1) {
-                        perror("smash error: open failed");
-                    }
-                    int resultRead2 = 2;
-                    int resultOpen3 = open(fileName.c_str(), O_RDONLY);
-                    if (resultOpen3 == -1) {
-                        perror("smash error: open failed");
-                    }
-                    int resultRead3 = 2;
+                int resultOpen2 = open(fileName.c_str(), O_RDONLY);
+                if (resultOpen2 == -1) {
+                    perror("smash error: open failed");
+                }
+                int resultRead2 = 2;
+                int resultOpen3 = open(fileName.c_str(), O_RDONLY);
+                if (resultOpen3 == -1) {
+                    perror("smash error: open failed");
+                }
+                int resultRead3 = 2;
 
-                    int countLines = 0, countChars = 0, countRestChars = 0, countTotalLines = 0;
-                    if (counter == 0) {
-                        if (isEmpty) {}
-                        else {
+                int countLines = 0, countChars = 0, countRestChars = 0, countTotalLines = 0;
+                if (counter == 0) {
+                    if (isEmpty) {}
+                    else {
 
-                            while (resultRead2 != 0) {
-                                resultRead2 = read(resultOpen2, buffer, 1);
-                                if (resultRead2 == -1) {
-                                    perror("smash error: read failed");
-                                }
-                                countChars++;
-                            }
-                            countChars--;
-                        }
-                    } else {
-                        while ((countLines < numLines) && (countTotalLines <= counter)) {
+                        while (resultRead2 != 0) {
                             resultRead2 = read(resultOpen2, buffer, 1);
                             if (resultRead2 == -1) {
                                 perror("smash error: read failed");
                             }
-                            if ((buffer[0] == '\n') || (resultRead2 == 0)) {
-                                if (countTotalLines >= counter - numLines) {
-                                    countLines++;
-                                    //if (countLines>counter-numLines){
-                                    //countChars++;
-                                    //break;
-                                    //}
-                                }
-                                countTotalLines++;
-                                if (countTotalLines == counter - numLines) {
-                                    countRestChars++;
-                                    continue;
-                                }
-                            }
-                            if (countTotalLines >= counter - numLines) {
-                                countChars++;
-                            } else {
-                                countRestChars++;
-                            }
-
-                        }
-                    }
-                    char *bufferOut[countChars];
-                    if (buffer[0] != '\n') {
-                        if (countRestChars > 0) {
-                            char *bufferGarbage[countRestChars];
-                            resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
-                            if (resultRead3 == -1) {
-                                perror("smash error: read failed");
-                            }
+                            countChars++;
                         }
                         countChars--;
-                        resultRead3 = read(resultOpen3, bufferOut, countChars);
-                        if (resultRead3 == -1) {
+                    }
+                } else {
+                    while ((countLines < numLines) && (countTotalLines <= counter)) {
+                        resultRead2 = read(resultOpen2, buffer, 1);
+                        if (resultRead2 == -1) {
                             perror("smash error: read failed");
                         }
-                        int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                        if (writeRes == -1) {
-                            perror("smash error: write failed");
-                        }
-                        close(resultOpen3);
-                        close(resultOpen2);
-                        close(resultOpen);
-                    } else {
-                        if (countRestChars > 0) {
-                            char *bufferGarbage[countRestChars];
-                            resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
-                            if (resultRead3 == -1) {
-                                perror("smash error: read failed");
+                        if ((buffer[0] == '\n') || (resultRead2 == 0)) {
+                            if (countTotalLines >= counter - numLines) {
+                                countLines++;
+                                //if (countLines>counter-numLines){
+                                //countChars++;
+                                //break;
+                                //}
+                            }
+                            countTotalLines++;
+                            if (countTotalLines == counter - numLines) {
+                                countRestChars++;
+                                continue;
                             }
                         }
-                        resultRead3 = read(resultOpen3, bufferOut, countChars);
+                        if (countTotalLines >= counter - numLines) {
+                            countChars++;
+                        } else {
+                            countRestChars++;
+                        }
+
+                    }
+                }
+                char *bufferOut[countChars];
+                if (buffer[0] != '\n') {
+                    if (countRestChars > 0) {
+                        char *bufferGarbage[countRestChars];
+                        resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
                         if (resultRead3 == -1) {
                             perror("smash error: read failed");
                         }
-                        int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
-                        if (writeRes == -1) {
-                            perror("smash error: write failed");
-                        }
-                        close(resultOpen3);
-                        close(resultOpen2);
-                        close(resultOpen);
                     }
-
+                    countChars--;
+                    resultRead3 = read(resultOpen3, bufferOut, countChars);
+                    if (resultRead3 == -1) {
+                        perror("smash error: read failed");
+                    }
+                    int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
+                    if (writeRes == -1) {
+                        perror("smash error: write failed");
+                    }
+                    close(resultOpen3);
+                    close(resultOpen2);
+                    close(resultOpen);
+                } else {
+                    if (countRestChars > 0) {
+                        char *bufferGarbage[countRestChars];
+                        resultRead3 = read(resultOpen3, bufferGarbage, countRestChars);
+                        if (resultRead3 == -1) {
+                            perror("smash error: read failed");
+                        }
+                    }
+                    resultRead3 = read(resultOpen3, bufferOut, countChars);
+                    if (resultRead3 == -1) {
+                        perror("smash error: read failed");
+                    }
+                    int writeRes = write(STDOUT_FILENO, bufferOut, countChars);
+                    if (writeRes == -1) {
+                        perror("smash error: write failed");
+                    }
+                    close(resultOpen3);
+                    close(resultOpen2);
+                    close(resultOpen);
                 }
 
             }
+
         }
     }
+}
 
 
 TouchCommand::TouchCommand(const char *cmd_line, char **args) : BuiltInCommand(
