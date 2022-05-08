@@ -532,10 +532,10 @@ void KillCommand::execute() {
 }
 
 ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltInCommand(cmd_line) {
-    if (args[2] != nullptr) {
-        errorMessage = "smash error: fg: too many arguments\n";
-    } else {
-        if (args[1] != nullptr) {
+    if (args[1] != nullptr) {
+        if (args[2] != nullptr) {
+            errorMessage = "smash error: fg: invalid arguments\n";
+        } else {
             if (!isNumber(args[1])) {
                 // TODO: is jobId < 0 invalid argument?
                 errorMessage = "smash error: fg: invalid arguments\n";
@@ -545,9 +545,9 @@ ForegroundCommand::ForegroundCommand(const char *cmd_line, char **args) : BuiltI
                     errorMessage = "smash error: fg: job-id " + string(args[1]) + " does not exist\n";
                 }
             }
-        } else {
-            jobId = LATEST_JOB;
         }
+    } else {
+        jobId = LATEST_JOB;
     }
 }
 
