@@ -32,7 +32,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line, int *specialType, strin
     string string_cmdline = cmd_line;
     unsigned int splitAt = findSpecialChar(string_cmdline, specialType);
     string left_side = string_cmdline.substr(0, splitAt);
-    string right_side;
+    string right_side = left_side;
     if (*specialType != NOT_SPECIAL_COMMAND) {
         int length = *specialType == SPECIAL_CHAR_REDIRECT || *specialType == SPECIAL_PIPE_STDOUT ? 1 : 2;
         right_side = string_cmdline.substr(splitAt + length, string_cmdline.length() - 1);
